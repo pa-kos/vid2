@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64图片加载器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .image-container {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+        img {
+            max-width: 100%;
+            margin-top: 10px;
+            display: block;
+        }
+        .loading { color: #666; font-style: italic; }
+        .error { color: red; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>图片加载示例</h1>
+    <p>桥豆！图片要加载一下～</p>
+    <p>如果长时间无法载入图片：QQ用户可在线查看微云PDF版或迅雷下载原图包</p>
+    
+    <div id="images-container">
+        <div class="loading">正在加载图片...</div>
+    </div>
+
+    <script>
+        // 配置GitHub文件URL（替换为你的实际URL）
+        const GITHUB_MD_URL = "https://raw.githubusercontent.com/pa-kos/JPGMD/main/RloptJtLCj.md";
+        
+        // 动态加载图片
+        async function loadImages() {
+            const container = document.getElementById('images-container');
+            
+            try {
+                // 添加时间戳防止缓存
+                const response = await fetch(`${GITHUB_MD_URL}?t=${Date.now()}`);
+                if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
+                
+                const mdContent = await response.text();
+                container.innerHTML = ''; // 清空加载提示
+                
+                // 解析Markdown中的图片
+                const sections = mdContent.split('## ').slice(1); // 跳过文件头
+                
+                sections.forEach(section => {
+                    const lines = section.split('\n');
+                    const title = lines[0].trim();
+                    const base64Line = lines.find(line => line.includes('data:image/'));
+                    
+                    if (!base64Line) return;
+                    
+                    // 提取Base64数据
+                    const base64Data = base64Line.match(/base64,(.+?)\)/)[1];
+                    const imgFormat = base64Line.match(/data:image\/(.+?);/)[1];
+                    
+                    // 创建图片容器
+                    const div = document.createElement('div');
+                    div.className = 'image-container';
+                    div.innerHTML = `
+                        <h3>${title}</h3>
+                        <div class="loading">加载中...</div>
+                    `;
+                    container.appendChild(div);
+                    
+                    // 预加载图片
+                    const img = new Image();
+                    img.onload = () => {
+                        div.querySelector('.loading').replaceWith(img);
+                    };
+                    img.onerror = () => {
+                        div.querySelector('.loading').className = 'error';
+                        div.querySelector('.loading').textContent = '图片加载失败';
+                    };
+                    img.src = `data:image/${imgFormat};base64,${base64Data}`;
+                });
+                
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="error">
+                        <p>⚠️ 加载失败: ${error.message}</p>
+                        <p>请检查网络或文件URL是否正确</p>
+                    </div>
+                `;
+                console.error(error);
+            }
+        }
+        
+        // 页面加载时启动
+        window.addEventListener('DOMContentLoaded', loadImages);
+    </script>
+</body>
+</html>
