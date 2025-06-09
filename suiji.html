@@ -98,26 +98,21 @@
     <script>
         // 定义 HTML 文件链接数组（默认地址）
 
-        let htmlFiles = ['https://xiaobeirepo.github.io/repo2/ociskldo.html',
-            'https://xiaobeirepo.github.io/repo2/oxkslw.html',
-            'https://xiaobeirepo.github.io/repo2/o0woq9.html',
-            'https://xiaobeirepo.github.io/repo2/xnsmdk1.html',
-            'https://xiaobeirepo.github.io/repo2/ox9siw.html',
-            'https://xiaobeirepo.github.io/repo2/n2m1i9.html',
-            'https://xiaobeirepo.github.io/repo2/o2pk1l2.html',
-        ];
+        let htmlFiles = [];
+    let currentLoadedPage = '';
 
-        let currentLoadedPage = ''; // 当前加载的页面链接
-
-        // 动态替换链接地址
-        function replaceLinksIfNeeded() {
-            const currentDomain = window.location.hostname;
-            if (currentDomain === "repo2-320.pages.dev") {
-                htmlFiles = htmlFiles.map(link =>
-                    link.replace("https://xiaobeirepo.github.io/repo2/", "https://repo2-320.pages.dev/")
-                );
-            }
+    // 动态替换链接地址（保持原有功能）
+    function replaceLinksIfNeeded() {
+        const currentDomain = window.location.hostname;
+        if (currentDomain === "repo2-320.pages.dev") {
+            htmlFiles = htmlFiles.map(link =>
+                link.replace(
+                    "https://YOUR_GITHUB_USERNAME.github.io/vid2/", 
+                    "https://repo2-320.pages.dev/"
+                )
+            );
         }
+    }
 
         // 随机加载 HTML 文件内容
         async function loadRandomPage() {
