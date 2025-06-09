@@ -1,50 +1,41 @@
-name: Update HTML File List
+name: Update HTML List
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]  # 在 main 分支推送时触发
     paths:
-      - '**.html'           # 监控所有子目录的HTML文件
-      - '!suiji.html'       # 排除自身，避免循环触发
+      - '*.html'       # 仅当 HTML 文件变动时运行
 
 jobs:
-  update-list:
+  update-html-list:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write      # 允许工作流提交修改
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # 获取完整git历史（避免提交冲突）
 
-      - name: Find HTML files
-        id: scan-files
+      - name: Generate HTML file list
+        id: generate-list
         run: |
-          # 使用更安全的查找方式（兼容含空格的文件名）
-          HTML_FILES=$(find . -name "*.html" -not -path "./suiji.html" -printf '"%p"\n' | sed 's|^./||')
-          
-          # 转换为GitHub Pages URL格式
-          BASE_URL="https://${{ github.repository_owner }}.github.io/$(basename ${{ github.repository }})/"
-          URLS=$(echo "$HTML_FILES" | awk -v url="$BASE_URL" '{print url $0}')
-          
-          # 格式化为JS数组（JSON安全转义）
-          JS_ARRAY=$(echo "$URLS" | jq -R -s -c 'split("\n") | map(select(. != ""))')
+          # 获取所有 HTML 文件（排除 suiji.html）
+          HTML_FILES=$(find . -name "*.html" ! -name "suiji.html" | sed 's|^./||')
+
+          # 转换为 GitHub Pages URL
+          REPO_URL="https://pa-kos.github.io/vid2/"
+          HTML_URLS=$(echo "$HTML_FILES" | awk -v url="$REPO_URL" '{print url $0}')
+
+          # 格式化为 JavaScript 数组（单行）
+          JS_ARRAY="[$(echo "$HTML_URLS" | sed "s/^/'/;s/$/'/" | tr '\n' ',' | sed 's/,$//')]"
+
+          # 输出到环境变量
           echo "html_files=${JS_ARRAY}" >> $GITHUB_OUTPUT
 
       - name: Update suiji.html
-        if: steps.scan-files.outputs.html_files != '[]'  # 仅在找到文件时更新
         run: |
-          # 使用perl替换（兼容多行和特殊字符）
-          perl -i -pe '
-            BEGIN { $js_array = $ENV{HTML_FILES}; }
-            s|let htmlFiles = .*?;|let htmlFiles = $js_array;|s
-          ' suiji.html
+          # 替换 htmlFiles 数组
+          sed -i "s|let htmlFiles = .*;|let htmlFiles = ${{ steps.generate-list.outputs.html_files }};|" suiji.html
 
-          # 安全提交（避免空提交）
-          git diff --quiet || {
-            git config --global user.name "GitHub Actions"
-            git config --global user.email "actions@github.com"
-            git add suiji.html
-            git commit -m "Auto-update HTML list (${GITHUB_SHA:0:7})"
-            git push
-          }
+          # 提交更改
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add suiji.html
+          git commit -m "[Automated] Update HTML file list"
+          git push
