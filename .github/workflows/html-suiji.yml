@@ -1,4 +1,4 @@
-name: Update URL List
+name: Auto Update URL List
 on:
   push:
     branches: [ main ]
@@ -20,32 +20,32 @@ jobs:
         id: generate-list
         run: |
           # 获取所有HTML文件（排除自身）
-          mapfile -t FILES < <(find . -name "*.html" ! -name "suiji.html" -printf '%P\n')
+          HTML_FILES=$(find . -name "*.html" ! -name "suiji.html" -printf '%P\n')
           
-          # 构建完全匹配的JS数组（保留末尾逗号）
-          echo "let htmlFiles = [" > temp_array.txt
-          for FILE in "${FILES[@]}"; do
-            echo "    'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$FILE'," >> temp_array.txt
-          done
-          echo "];" >> temp_array.txt
+          # 构建完全匹配的JS数组格式
+          JS_ARRAY="let htmlFiles = ["
+          while IFS= read -r line; do
+            JS_ARRAY+="\n    'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$line',"
+          done <<< "$HTML_FILES"
+          JS_ARRAY+="\n];"
           
-          # 存储为环境变量（保留换行）
-          echo "JS_ARRAY<<EOF" >> $GITHUB_ENV
-          cat temp_array.txt >> $GITHUB_ENV
+          echo "NEW_ARRAY<<EOF" >> $GITHUB_ENV
+          echo "$JS_ARRAY" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Update HTML File
         run: |
-          # 使用awk精准替换（保留文件其他部分）
-          awk -v new_array="$(cat temp_array.txt)" '
-            /let htmlFiles = \[/ { in_array=1; print new_array; next }
-            in_array && /\];/ { in_array=0; next }
-            !in_array { print }
-          ' suiji.html > temp.html && mv temp.html suiji.html
+          # 使用perl进行精准替换
+          perl -i -pe '
+            BEGIN { $/ = undef; $new = $ENV{NEW_ARRAY}; }
+            s|let htmlFiles = \[.*?\];|$new|s
+          ' suiji.html
           
           # 提交更改
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add suiji.html
-          git commit -m "Auto-update URLs [skip ci]"
-          git push
+          git diff --quiet || {
+            git config --global user.name "GitHub Actions"
+            git config --global user.email "actions@github.com"
+            git add suiji.html
+            git commit -m "Auto-update URL list [skip ci]"
+            git push
+          }
