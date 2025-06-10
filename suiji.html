@@ -202,42 +202,27 @@ if (!Array.isArray(htmlFiles)) {
 }
         
 // 显示加载状态
+// 修改后的 loadRandomPage 函数
 async function loadRandomPage() {
-  const loadingState = `
-    <div id="loading-state">
-      <div class="spinner"></div>
-      <p class="loading-text">正在分析你的喜好...</p>
-      <div class="progress-bar"><div class="progress" id="load-progress"></div></div>
-    </div>
-  `;
-  document.getElementById("content").innerHTML = loadingState;
-
-  // 模拟进度条（真实项目可对接实际加载进度）
-  let progress = 0;
-  const progressInterval = setInterval(() => {
-    progress = Math.min(progress + Math.random() * 10, 90);
-    document.getElementById("load-progress").style.width = `${progress}%`;
-  }, 300);
-
   try {
+    // 显示加载动画
+    document.getElementById("content").innerHTML = `
+      <div class="spinner"></div>
+      <p>加载中...</p>
+    `;
+
+    // 异步请求
     const response = await fetch(currentLoadedPage);
-    clearInterval(progressInterval);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
-    // 加载完成动画
-    document.getElementById("load-progress").style.width = "100%";
-    document.querySelector(".loading-text").textContent = "加载完成！";
-    
-    // 0.5秒后显示内容
-    setTimeout(() => {
-      document.getElementById("content").innerHTML = await response.text();
-    }, 500);
+    // 更新内容
+    document.getElementById("content").innerHTML = await response.text();
     
   } catch (error) {
-    clearInterval(progressInterval);
+    console.error("加载失败:", error);
     document.getElementById("content").innerHTML = `
-      <div class="error-state">
-        <p>😢 加载失败，请 <button onclick="loadRandomPage()">点击重试</button></p>
-      </div>
+      <p>加载失败: ${error.message}</p>
+      <button onclick="loadRandomPage()">重试</button>
     `;
   }
 }
