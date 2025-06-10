@@ -94,14 +94,67 @@
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 999;
         }
+/* 加载提示效果 */
+        #loading-state {
+  text-align: center;
+  padding: 30px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 10px;
+  max-width: 300px;
+  margin: 100px auto;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #ff6b81;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.progress-bar {
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  margin: 20px 0;
+  overflow: hidden;
+}
+
+.progress {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #ff6b81, #ff8e53);
+  transition: width 0.3s;
+}
+
+.hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 15px;
+}
+        
     </style>
 </head>
 <body>
     <div id="content">
-        <h1>正在为你寻找色图...请稍后...</h1>
-        <br/>
-        <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>
-    </div>
+        <div id="loading-state">
+  <div class="spinner"></div>
+  <p class="loading-text">乔豆麻袋！正在为你寻找色图...</p>
+            <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>
+  <div class="progress-bar">
+    <div class="progress"></div>
+  </div>
+  <p class="hint">首次加载可能需要3~5秒，请耐心等待❤️</p>
+</div>
+</div>        
+        
 
     <!-- 悬浮收藏按钮 -->
     <button id="favoriteButton" onclick="showFavoriteModal()">
@@ -119,7 +172,7 @@
         <button onclick="hideFavoriteModal()">关闭</button>
     </div>
     <script>
-// 定义 HTML 文件链接数组（将由GitHub Actions自动更新）
+// 定义 HTML 文件链接数组
 let htmlFiles = [
     'https://pa-kos.github.io/vid2/xCVHqFdDjBfh.html',
 ];
@@ -147,35 +200,46 @@ if (!Array.isArray(htmlFiles)) {
     console.error("错误：htmlFiles不是数组！");
     htmlFiles = []; // 重置为空数组
 }
+        
+// 显示加载状态
 async function loadRandomPage() {
-    if (htmlFiles.length === 0) {
-        document.getElementById("content").innerHTML = `
-            <h1>加载失败</h1>
-            <p>没有可用的内容文件</p>
-            <button onclick="location.reload()">刷新重试</button>`;
-        return;
-    }
+  const loadingState = `
+    <div id="loading-state">
+      <div class="spinner"></div>
+      <p class="loading-text">正在分析你的喜好...</p>
+      <div class="progress-bar"><div class="progress" id="load-progress"></div></div>
+    </div>
+  `;
+  document.getElementById("content").innerHTML = loadingState;
 
-    const randomIndex = Math.floor(Math.random() * htmlFiles.length);
-    const randomFile = htmlFiles[randomIndex];
-    currentLoadedPage = randomFile;
-    console.log(`正在加载: ${randomFile}`);
+  // 模拟进度条（真实项目可对接实际加载进度）
+  let progress = 0;
+  const progressInterval = setInterval(() => {
+    progress = Math.min(progress + Math.random() * 10, 90);
+    document.getElementById("load-progress").style.width = `${progress}%`;
+  }, 300);
 
-    try {
-        const response = await fetch(randomFile);
-        if (response.ok) {
-            document.getElementById("content").innerHTML = await response.text();
-            document.getElementById("favoriteButton").style.display = 'flex';
-        } else {
-            console.warn(`文件返回状态: ${response.status}`);
-            htmlFiles.splice(randomIndex, 1);
-            loadRandomPage();
-        }
-    } catch (error) {
-        console.error(`加载错误: ${error.message}`);
-        htmlFiles.splice(randomIndex, 1);
-        loadRandomPage();
-    }
+  try {
+    const response = await fetch(currentLoadedPage);
+    clearInterval(progressInterval);
+    
+    // 加载完成动画
+    document.getElementById("load-progress").style.width = "100%";
+    document.querySelector(".loading-text").textContent = "加载完成！";
+    
+    // 0.5秒后显示内容
+    setTimeout(() => {
+      document.getElementById("content").innerHTML = await response.text();
+    }, 500);
+    
+  } catch (error) {
+    clearInterval(progressInterval);
+    document.getElementById("content").innerHTML = `
+      <div class="error-state">
+        <p>😢 加载失败，请 <button onclick="loadRandomPage()">点击重试</button></p>
+      </div>
+    `;
+  }
 }
 
 // 收藏功能（保持原始UI交互）
