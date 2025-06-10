@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -94,7 +93,7 @@
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 999;
         }
-/* 加载提示效果 */
+           /* 加载提示效果 */
         #loading-state {
   text-align: center;
   padding: 30px;
@@ -140,26 +139,44 @@
   margin-top: 15px;
 }
         
+        /* 错误状态样式 */
+.error {
+  text-align: center;
+  padding: 20px;
+  color: #ff4757;
+}
+.error button {
+  background: #ff6b81;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  margin-top: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+/* 强制显示关键元素 */
+#loading-state, #favoriteButton {
+  display: block !important;
+}
+        
     </style>
 </head>
 <body>
     <div id="content">
         <div id="loading-state">
-  <div class="spinner"></div>
-  <p class="loading-text">乔豆麻袋！正在为你寻找色图...</p>
-            <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>
-  <div class="progress-bar">
-    <div class="progress"></div>
-  </div>
-  <p class="hint">首次加载可能需要3~5秒，请耐心等待❤️</p>
-</div>
+        <div class="spinner"></div>
+        <p class="loading-text">乔豆麻袋！正在为你寻找色图...</p>
+        <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>
+        <div class="progress-bar"><div class="progress"></div></div>
+        <p class="hint">首次加载可能需要3~5秒，请耐心等待❤️</p>
+   </div>
 </div>        
         
 
     <!-- 悬浮收藏按钮 -->
     <button id="favoriteButton" onclick="showFavoriteModal()">
-        <img src="https://xiaobeirepo.github.io/repo2/Five-pointed_star.svg" alt="收藏"/>
-    </button>
+        <img src="https://xiaobeirepo.github.io/repo2/Five-pointed_star.svg" alt="收藏"/></button>
 
     <!-- 收藏弹窗 -->
     <div id="modalBackground" onclick="hideFavoriteModal()"></div>
@@ -202,29 +219,58 @@ if (!Array.isArray(htmlFiles)) {
 }
         
 // 显示加载状态
-// 修改后的 loadRandomPage 函数
+// 随机加载逻辑
 async function loadRandomPage() {
-  try {
-    // 显示加载动画
-    document.getElementById("content").innerHTML = `
-      <div class="spinner"></div>
-      <p>加载中...</p>
-    `;
+  // 确保有可选文件
+  if (htmlFiles.length === 0) {
+    showError("没有可用的内容文件");
+    return;
+  }
 
-    // 异步请求
-    const response = await fetch(currentLoadedPage);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  // 随机选择并赋值
+  currentLoadedPage = htmlFiles[Math.floor(Math.random() * htmlFiles.length)];
+  console.log("当前加载:", currentLoadedPage);
+
+  try {
+    showLoading(); // 显示加载动画
     
-    // 更新内容
-    document.getElementById("content").innerHTML = await response.text();
+    // 带超时的请求
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 10000); // 10秒超时
+    
+    const response = await fetch(currentLoadedPage, {
+      signal: controller.signal,
+      cache: 'no-store' // 跳过缓存
+    });
+
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    showContent(await response.text());
     
   } catch (error) {
-    console.error("加载失败:", error);
-    document.getElementById("content").innerHTML = `
-      <p>加载失败: ${error.message}</p>
-      <button onclick="loadRandomPage()">重试</button>
-    `;
+    showError(`加载失败: ${error.message}`);
   }
+}
+
+// 独立显示函数
+function showLoading() {
+  document.getElementById("content").innerHTML = `
+    <div id="loading-state">
+      <div class="spinner"></div>
+      <p>正在连接资源库...</p>
+    </div>`;
+}
+
+function showContent(html) {
+  document.getElementById("content").innerHTML = html;
+  document.getElementById("favoriteButton").style.display = 'flex';
+}
+
+function showError(msg) {
+  document.getElementById("content").innerHTML = `
+    <div class="error">
+      <p>${msg}</p>
+      <button onclick="loadRandomPage()">重试</button>
+    </div>`;
 }
 
 // 收藏功能（保持原始UI交互）
@@ -245,11 +291,20 @@ function copyToClipboard() {
 }
 
 // 初始化
+// 屏蔽扩展干扰
 window.onload = () => {
-    replaceLinksIfNeeded();
-    loadRandomPage();
+  if (window.chrome?.runtime?.id) {
+    console.warn("检测到浏览器扩展，可能影响功能");
+  }
+
+  replaceLinksIfNeeded();
+  
+  // 保留初始HTML结构（重要！）
+  const initialContent = document.getElementById("content").innerHTML;
+  window.fallbackContent = initialContent;
+
+  loadRandomPage();
 };
 </script>
 </body>
-
 </html>
