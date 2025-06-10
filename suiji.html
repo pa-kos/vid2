@@ -95,13 +95,33 @@
             z-index: 999;
         }
     </style>
-    <script>
-        // 定义 HTML 文件链接数组（默认地址）
+</head>
+<body>
+    <div id="content">
+        <h1>正在为你寻找色图...请稍后...</h1>
+        <br/>
+        <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>
+    </div>
 
-<script>
+    <!-- 悬浮收藏按钮 -->
+    <button id="favoriteButton" onclick="showFavoriteModal()">
+        <img src="https://xiaobeirepo.github.io/repo2/Five-pointed_star.svg" alt="收藏"/>
+    </button>
+
+    <!-- 收藏弹窗 -->
+    <div id="modalBackground" onclick="hideFavoriteModal()"></div>
+    <div id="favoriteModal">
+        <h2>当前页面链接：</h2>
+        <textarea id="pageLink" readonly></textarea>
+        <br/>
+        <button onclick="copyToClipboard()">复制链接</button>
+        <p>复制页面链接收藏好（添加书签或发给好友）～</p>
+        <button onclick="hideFavoriteModal()">关闭</button>
+    </div>
+    <script>
 // 定义 HTML 文件链接数组（将由GitHub Actions自动更新）
 let htmlFiles = [
-    'https://pa-kos.github.io/vid2/placeholder.html',
+    'https://YOUR_GITHUB_USERNAME.github.io/vid2/placeholder.html',
 ];
 let currentLoadedPage = '';
 
@@ -111,7 +131,7 @@ function replaceLinksIfNeeded() {
     if (currentDomain === "repo2-320.pages.dev") {
         htmlFiles = htmlFiles.map(link =>
             link.replace(
-                "https://pa-kos.github.io/vid2/", 
+                "https://YOUR_GITHUB_USERNAME.github.io/vid2/", 
                 "https://repo2-320.pages.dev/"
             )
         );
@@ -173,30 +193,6 @@ window.onload = () => {
     loadRandomPage();
 };
 </script>
-</head>
-
-<body>
-    <div id="content">
-        <h1>正在为你寻找色图...请稍后...</h1>
-        <br/>
-        <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>
-    </div>
-
-    <!-- 悬浮收藏按钮 -->
-    <button id="favoriteButton" onclick="showFavoriteModal()">
-        <img src="https://xiaobeirepo.github.io/repo2/Five-pointed_star.svg" alt="收藏"/>
-    </button>
-
-    <!-- 收藏弹窗 -->
-    <div id="modalBackground" onclick="hideFavoriteModal()"></div>
-    <div id="favoriteModal">
-        <h2>当前页面链接：</h2>
-        <textarea id="pageLink" readonly></textarea>
-        <br/>
-        <button onclick="copyToClipboard()">复制链接</button>
-        <p>复制页面链接收藏好（添加书签或发给好友）～</p>
-        <button onclick="hideFavoriteModal()">关闭</button>
-    </div>
 </body>
 
 </html>
