@@ -47,33 +47,48 @@
 
     <script>
         // 初始化数组（将由GitHub Actions自动填充）
-        let htmlFiles = ['https://pa-kos.github.io/vid2/placeholder.html'];
-        let currentLoadedPage = '';
-        let retryCount = 0;
-        const MAX_RETRIES = 3;
-
-        // 域名适配（保留原逻辑）
-        function replaceLinksIfNeeded() {
-            const currentDomain = window.location.hostname;
-            if (currentDomain === "repo2-320.pages.dev") {
-                htmlFiles = htmlFiles.map(link => 
-                    link.replace(
-                        "https://pa-kos.github.io/vid2/",
-                        "https://repo2-320.pages.dev/"
-                    )
-                );
-            }
-        }
-
-        // 增强版内容加载
-        async function loadRandomPage() {
-            try {
-                if (!htmlFiles || htmlFiles.length === 0) {
-                    throw new Error('没有可用的内容文件');
-                }
-
-                const randomIndex = Math.floor(Math.random() * htmlFiles.length);
-                currentLoadedPage = htmlFiles[randomIndex];
+let htmlFiles = [
+    'https://pa-kos.github.io/vid2/sAfLxeoVynBR.html',
+    'https://pa-kos.github.io/vid2/heimaosm.html',
+    'https://pa-kos.github.io/vid2/uSXcNjSpwqMa.html',
+    'https://pa-kos.github.io/vid2/ceshi.html',
+    'https://pa-kos.github.io/vid2/vlrphEDNyKdJ.html',
+    'https://pa-kos.github.io/vid2/e573VdJFptpc.html',
+    'https://pa-kos.github.io/vid2/ceshi22.html',
+    'https://pa-kos.github.io/vid2/lqjDiCcEUf.html',
+    'https://pa-kos.github.io/vid2/ybDqxUBM.html',
+    'https://pa-kos.github.io/vid2/ruolda.html',
+    'https://pa-kos.github.io/vid2/oYwUjbssGOyQ.html',
+    'https://pa-kos.github.io/vid2/pDpstFhUDmnK.html',
+    'https://pa-kos.github.io/vid2/GRTLeLUQ.html',
+    'https://pa-kos.github.io/vid2/GjrjrKEQWKWc.html',
+    'https://pa-kos.github.io/vid2/output_1749415763.html',
+    'https://pa-kos.github.io/vid2/gallery_1749416118.html',
+    'https://pa-kos.github.io/vid2/suk6xhQ1h0F7.html',
+    'https://pa-kos.github.io/vid2/pvinNuNHZfeV.html',
+    'https://pa-kos.github.io/vid2/BjuHXIlJtRVP.html',
+    'https://pa-kos.github.io/vid2/gDgvAwXTYLiJ.html',
+    'https://pa-kos.github.io/vid2/NxgikthLROCx.html',
+    'https://pa-kos.github.io/vid2/WxawSExEGkkw.html',
+    'https://pa-kos.github.io/vid2/QYvCOErh.html',
+    'https://pa-kos.github.io/vid2/ydrqXreZnBEx.html',
+    'https://pa-kos.github.io/vid2/RalxhNXXRH.html',
+    'https://pa-kos.github.io/vid2/cJqikGDjENYa.html',
+    'https://pa-kos.github.io/vid2/yLIybiopHJ.html',
+    'https://pa-kos.github.io/vid2/222.html',
+    'https://pa-kos.github.io/vid2/123.html',
+    'https://pa-kos.github.io/vid2/ojfezBsMOJ.html',
+    'https://pa-kos.github.io/vid2/rgNyBRIUvqvH.html',
+    'https://pa-kos.github.io/vid2/YQPvlseylh.html',
+    'https://pa-kos.github.io/vid2/rDxHUPridq.html',
+    'https://pa-kos.github.io/vid2/kqEFkopUFApz.html',
+    'https://pa-kos.github.io/vid2/gFzVjqJklHwd.html',
+    'https://pa-kos.github.io/vid2/PnTePEbASKUH.html',
+    'https://pa-kos.github.io/vid2/RXnybfTHkrZv.html',
+    'https://pa-kos.github.io/vid2/ebtjSNzRXbeA.html',
+    'https://pa-kos.github.io/vid2/PdPwofou.html',
+    'https://pa-kos.github.io/vid2/iPEEtluf.html'
+];
                 
                 const response = await fetch(currentLoadedPage);
                 if (!response.ok) {
