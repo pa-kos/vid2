@@ -138,6 +138,14 @@ function replaceLinksIfNeeded() {
 }
 
 // 随机加载 HTML 文件内容
+        console.log("当前数组内容:", JSON.stringify(htmlFiles));
+console.log("数组长度:", htmlFiles.length);
+
+// 检查是否为真实数组
+if (!Array.isArray(htmlFiles)) {
+    console.error("错误：htmlFiles不是数组！");
+    htmlFiles = []; // 重置为空数组
+}
 async function loadRandomPage() {
     if (htmlFiles.length === 0) {
         document.getElementById("content").innerHTML = `
