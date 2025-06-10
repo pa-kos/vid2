@@ -16,28 +16,29 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Find HTML files
-        id: scan-files
+      - name: Generate proper array format
+        id: generate-array
         run: |
-          # 获取所有HTML文件（排除suiji.html和隐藏文件）
-          HTML_FILES=$(find . -name "*.html" ! -name "suiji.html" ! -path "./.*" -printf '%P\n')
+          # 获取HTML文件列表（排除自身）
+          HTML_FILES=$(find . -name "*.html" ! -name "suiji.html" -printf '%P\n')
           
-          # 转换为JS数组格式（完全匹配您的新模板格式）
-          JS_ARRAY="let htmlFiles = ["
-          while IFS= read -r line; do
-            JS_ARRAY+="\n    'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$line',"
+          # 生成标准JS数组格式（直接换行，无转义符）
+          echo "let htmlFiles = [" > array.txt
+          while IFS= read -r file; do
+            echo "    'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$file'," >> array.txt
           done <<< "$HTML_FILES"
-          JS_ARRAY+="\n];"
+          echo "];" >> array.txt
           
-          echo "html_files<<EOF" >> $GITHUB_ENV
-          echo "$JS_ARRAY" >> $GITHUB_ENV
+          # 存储为多行环境变量
+          echo "HTML_ARRAY<<EOF" >> $GITHUB_ENV
+          cat array.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Update HTML file
         run: |
-          # 使用perl进行精准替换（匹配新模板结构）
+          # 使用perl进行原生换行替换
           perl -i -pe '
-            BEGIN { $/ = undef; $new = $ENV{html_files}; }
+            BEGIN { $/ = undef; $new = $ENV{HTML_ARRAY}; }
             s|let htmlFiles = \[.*?\];|$new|s
           ' suiji.html
           
