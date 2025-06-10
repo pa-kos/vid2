@@ -1,8 +1,8 @@
-name: Update HTML List
+name: Auto Update Content List
 on:
   push:
     branches: [ main ]
-    paths: 
+    paths:
       - '**.html'
       - '!suiji.html'
 
@@ -17,35 +17,43 @@ jobs:
           fetch-depth: 0
 
       - name: Generate File List
-        id: file-list
+        id: generate-list
         run: |
-          # 获取所有HTML文件（排除自身）
-          HTML_FILES=$(find . -name "*.html" ! -name "suiji.html" -printf '%P\n')
+          # 获取所有HTML文件（排除自身和隐藏文件）
+          mapfile -t FILES < <(find . -name "*.html" ! -name "suiji.html" ! -path "./.*" -printf '%P\n')
           
-          # 转换为JS数组格式（保持原有缩进）
-          JS_ARRAY=$(
-            echo "$HTML_FILES" | 
-            awk -v url="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" '
-            BEGIN { print "    \047" url $1 "\047" }
-            NR>1 { print "    ,\047" url $1 "\047" }
-            END { print "]" }'
-          )
-          echo "html_files<<EOF" >> $GITHUB_ENV
-          echo "let htmlFiles = [" >> $GITHUB_ENV
+          # 构建JS数组（保持原格式）
+          JS_ARRAY="let htmlFiles = ["
+          for ((i=0; i<${#FILES[@]}; i++)); do
+            URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${FILES[$i]}"
+            if ((i > 0)); then JS_ARRAY+=",\n    "; else JS_ARRAY+="\n    "; fi
+            JS_ARRAY+="'$URL'"
+          done
+          JS_ARRAY+="\n];"
+          
+          # 输出到环境变量（保留换行符）
+          echo "HTML_ARRAY<<EOF" >> $GITHUB_ENV
           echo "$JS_ARRAY" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Update File
+      - name: Update HTML File
         run: |
-          # 使用perl精准替换（保留格式）
-          perl -i -pe '
-            BEGIN { $/ = undef; $new = $ENV{html_files}; }
-            s|let htmlFiles = .*?\];|$new|s
-          ' suiji.html
-          
-          # 提交更改
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add suiji.html
-          git commit -m "Auto-update file list [skip ci]"
-          git push
+          # 使用awk进行精准替换（保留文件其他内容）
+          awk -v new_array="$HTML_ARRAY" '
+            /let htmlFiles = \[/ { in_array=1; print new_array; next }
+            in_array && /\]/ { in_array=0; next }
+            !in_array { print }
+          ' suiji.html > temp.html && mv temp.html suiji.html
+
+          # 验证更新
+          if grep -q "let htmlFiles = \[" suiji.html; then
+            echo "更新成功"
+            git config --global user.name "GitHub Actions"
+            git config --global user.email "actions@github.com"
+            git add suiji.html
+            git commit -m "Auto-update content list [skip ci]"
+            git push
+          else
+            echo "错误：更新失败"
+            exit 1
+          fi
