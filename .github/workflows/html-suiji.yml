@@ -1,4 +1,4 @@
-name: Auto Update URL List
+name: Update URL List
 on:
   push:
     branches: [ main ]
@@ -17,40 +17,35 @@ jobs:
           fetch-depth: 0
 
       - name: Generate URL List
-        id: generate-urls
+        id: generate-list
         run: |
           # 获取所有HTML文件（排除自身）
-          HTML_FILES=$(find . -name "*.html" ! -name "suiji.html" -printf '%P\n')
+          mapfile -t FILES < <(find . -name "*.html" ! -name "suiji.html" -printf '%P\n')
           
-          # 转换为GitHub Pages URL
-          BASE_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
-          URLS=$(echo "$HTML_FILES" | awk -v url="$BASE_URL" '{print url $0}')
+          # 构建完全匹配的JS数组（保留末尾逗号）
+          echo "let htmlFiles = [" > temp_array.txt
+          for FILE in "${FILES[@]}"; do
+            echo "    'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$FILE'," >> temp_array.txt
+          done
+          echo "];" >> temp_array.txt
           
-          # 格式化为原始模板的精确格式（逗号在行尾）
-          JS_ARRAY="let htmlFiles = ["
-          while IFS= read -r line; do
-            JS_ARRAY+="\n    '$line',"
-          done <<< "$URLS"
-          JS_ARRAY="${JS_ARRAY%,}"  # 移除最后一个逗号
-          JS_ARRAY+="\n];"
-          
-          echo "html_files<<EOF" >> $GITHUB_ENV
-          echo "$JS_ARRAY" >> $GITHUB_ENV
+          # 存储为环境变量（保留换行）
+          echo "JS_ARRAY<<EOF" >> $GITHUB_ENV
+          cat temp_array.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Update HTML File
         run: |
-          # 使用perl进行精准行内替换（保持原格式）
-          perl -i -pe '
-            BEGIN { $/ = undef; $new = $ENV{html_files}; }
-            s|let htmlFiles = \[.*?\];|$new|s
-          ' suiji.html
+          # 使用awk精准替换（保留文件其他部分）
+          awk -v new_array="$(cat temp_array.txt)" '
+            /let htmlFiles = \[/ { in_array=1; print new_array; next }
+            in_array && /\];/ { in_array=0; next }
+            !in_array { print }
+          ' suiji.html > temp.html && mv temp.html suiji.html
           
-          # 提交更改（仅当有变动时）
-          git diff --quiet || {
-            git config --global user.name "GitHub Actions"
-            git config --global user.email "actions@github.com"
-            git add suiji.html
-            git commit -m "Auto-update URL list [skip ci]"
-            git push
-          }
+          # 提交更改
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add suiji.html
+          git commit -m "Auto-update URLs [skip ci]"
+          git push
