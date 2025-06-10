@@ -98,134 +98,81 @@
     <script>
         // 定义 HTML 文件链接数组（默认地址）
 
+<script>
+// 定义 HTML 文件链接数组（将由GitHub Actions自动更新）
 let htmlFiles = [
-    'https://pa-kos.github.io/vid2/sAfLxeoVynBR.html',
-    'https://pa-kos.github.io/vid2/heimaosm.html',
-    'https://pa-kos.github.io/vid2/uSXcNjSpwqMa.html',
-    'https://pa-kos.github.io/vid2/ceshi.html',
-    'https://pa-kos.github.io/vid2/vlrphEDNyKdJ.html',
-    'https://pa-kos.github.io/vid2/e573VdJFptpc.html',
-    'https://pa-kos.github.io/vid2/ceshi22.html',
-    'https://pa-kos.github.io/vid2/lqjDiCcEUf.html',
-    'https://pa-kos.github.io/vid2/ybDqxUBM.html',
-    'https://pa-kos.github.io/vid2/ruolda.html',
-    'https://pa-kos.github.io/vid2/oYwUjbssGOyQ.html',
-    'https://pa-kos.github.io/vid2/pDpstFhUDmnK.html',
-    'https://pa-kos.github.io/vid2/GRTLeLUQ.html',
-    'https://pa-kos.github.io/vid2/GjrjrKEQWKWc.html',
-    'https://pa-kos.github.io/vid2/output_1749415763.html',
-    'https://pa-kos.github.io/vid2/gallery_1749416118.html',
-    'https://pa-kos.github.io/vid2/suk6xhQ1h0F7.html',
-    'https://pa-kos.github.io/vid2/pvinNuNHZfeV.html',
-    'https://pa-kos.github.io/vid2/BjuHXIlJtRVP.html',
-    'https://pa-kos.github.io/vid2/gDgvAwXTYLiJ.html',
-    'https://pa-kos.github.io/vid2/NxgikthLROCx.html',
-    'https://pa-kos.github.io/vid2/WxawSExEGkkw.html',
-    'https://pa-kos.github.io/vid2/QYvCOErh.html',
-    'https://pa-kos.github.io/vid2/ydrqXreZnBEx.html',
-    'https://pa-kos.github.io/vid2/RalxhNXXRH.html',
-    'https://pa-kos.github.io/vid2/cJqikGDjENYa.html',
-    'https://pa-kos.github.io/vid2/yLIybiopHJ.html',
-    'https://pa-kos.github.io/vid2/222.html',
-    'https://pa-kos.github.io/vid2/123.html',
-    'https://pa-kos.github.io/vid2/ojfezBsMOJ.html',
-    'https://pa-kos.github.io/vid2/rgNyBRIUvqvH.html',
-    'https://pa-kos.github.io/vid2/YQPvlseylh.html',
-    'https://pa-kos.github.io/vid2/rDxHUPridq.html',
-    'https://pa-kos.github.io/vid2/kqEFkopUFApz.html',
-    'https://pa-kos.github.io/vid2/WQPXEMLIdkoT.html',
-    'https://pa-kos.github.io/vid2/gFzVjqJklHwd.html',
-    'https://pa-kos.github.io/vid2/PnTePEbASKUH.html',
-    'https://pa-kos.github.io/vid2/upJlaVSjpCxg.html',
-    'https://pa-kos.github.io/vid2/RXnybfTHkrZv.html',
-    'https://pa-kos.github.io/vid2/ebtjSNzRXbeA.html',
-    'https://pa-kos.github.io/vid2/PdPwofou.html',
-    'https://pa-kos.github.io/vid2/iPEEtluf.html',
+    'https://pa-kos.github.io/vid2/placeholder.html',
 ];
-        let currentLoadedPage = ''; // 当前加载的页面链接
+let currentLoadedPage = '';
 
-        // 动态替换链接地址
-        function replaceLinksIfNeeded() {
-            const currentDomain = window.location.hostname;
-            if (currentDomain === "repo2-320.pages.dev") {
-                htmlFiles = htmlFiles.map(link =>
-                    link.replace("https://xiaobeirepo.github.io/repo2/", "https://repo2-320.pages.dev/")
-                );
-            }
+// 动态替换链接地址
+function replaceLinksIfNeeded() {
+    const currentDomain = window.location.hostname;
+    if (currentDomain === "repo2-320.pages.dev") {
+        htmlFiles = htmlFiles.map(link =>
+            link.replace(
+                "https://pa-kos.github.io/vid2/", 
+                "https://repo2-320.pages.dev/"
+            )
+        );
+    }
+}
+
+// 随机加载 HTML 文件内容
+async function loadRandomPage() {
+    if (htmlFiles.length === 0) {
+        document.getElementById("content").innerHTML = `
+            <h1>加载失败</h1>
+            <p>没有可用的内容文件</p>
+            <button onclick="location.reload()">刷新重试</button>`;
+        return;
+    }
+
+    const randomIndex = Math.floor(Math.random() * htmlFiles.length);
+    const randomFile = htmlFiles[randomIndex];
+    currentLoadedPage = randomFile;
+    console.log(`正在加载: ${randomFile}`);
+
+    try {
+        const response = await fetch(randomFile);
+        if (response.ok) {
+            document.getElementById("content").innerHTML = await response.text();
+            document.getElementById("favoriteButton").style.display = 'flex';
+        } else {
+            console.warn(`文件返回状态: ${response.status}`);
+            htmlFiles.splice(randomIndex, 1);
+            loadRandomPage();
         }
+    } catch (error) {
+        console.error(`加载错误: ${error.message}`);
+        htmlFiles.splice(randomIndex, 1);
+        loadRandomPage();
+    }
+}
 
-        // 随机加载 HTML 文件内容
-        async function loadRandomPage() {
-            if (htmlFiles.length === 0) {
-                // 如果数组为空，显示错误消息
-                document.getElementById("content").innerHTML = `
-          <p>All files failed to load. Please try again later.</p>`;
-                return;
-            }
+// 收藏功能（保持原始UI交互）
+function showFavoriteModal() {
+    document.getElementById('pageLink').value = currentLoadedPage;
+    document.getElementById('favoriteModal').style.display = 'block';
+    document.getElementById('modalBackground').style.display = 'block';
+}
+function hideFavoriteModal() {
+    document.getElementById('favoriteModal').style.display = 'none';
+    document.getElementById('modalBackground').style.display = 'none';
+}
+function copyToClipboard() {
+    const textarea = document.getElementById('pageLink');
+    textarea.select();
+    document.execCommand('copy');
+    alert('链接已复制到剪贴板！');
+}
 
-            // 随机选择文件
-            const randomIndex = Math.floor(Math.random() * htmlFiles.length);
-            const randomFile = htmlFiles[randomIndex];
-            currentLoadedPage = randomFile; // 保存当前加载的页面链接
-            console.log(`Trying to load ${randomFile}`);
-
-            try {
-                // 请求文件内容
-                const response = await fetch(randomFile);
-
-                if (response.ok) {
-                    // 加载成功，显示内容
-                    const content = await response.text();
-                    document.getElementById("content").innerHTML = content;
-
-                    // 显示收藏按钮
-                    document.getElementById("favoriteButton").style.display = 'flex';
-                } else {
-                    // 如果返回 404，将文件从数组中移除并重新尝试
-                    console.warn(`File ${randomFile} returned status: ${response.status}`);
-                    htmlFiles.splice(randomIndex, 1); // 从数组中移除
-                    loadRandomPage(); // 重新尝试加载
-                }
-            } catch (error) {
-                // 捕获其他错误，将文件从数组中移除并重新尝试
-                console.error(`Error loading file ${randomFile}: ${error.message}`);
-                htmlFiles.splice(randomIndex, 1); // 从数组中移除
-                loadRandomPage(); // 重新尝试加载
-            }
-        }
-
-        // 显示收藏弹窗
-        function showFavoriteModal() {
-            const modal = document.getElementById('favoriteModal');
-            const background = document.getElementById('modalBackground');
-            const textarea = document.getElementById('pageLink');
-            textarea.value = currentLoadedPage; // 设置当前加载的页面链接
-            modal.style.display = 'block';
-            background.style.display = 'block';
-        }
-
-        // 隐藏收藏弹窗
-        function hideFavoriteModal() {
-            const modal = document.getElementById('favoriteModal');
-            const background = document.getElementById('modalBackground');
-            modal.style.display = 'none';
-            background.style.display = 'none';
-        }
-
-        // 复制链接到剪贴板
-        function copyToClipboard() {
-            const textarea = document.getElementById('pageLink');
-            textarea.select();
-            document.execCommand('copy');
-            alert('链接已复制到剪贴板！');
-        }
-
-        // 页面加载时调用函数
-        window.onload = () => {
-            replaceLinksIfNeeded(); // 检测并替换链接地址
-            loadRandomPage(); // 加载随机页面
-        };
-    </script>
+// 初始化
+window.onload = () => {
+    replaceLinksIfNeeded();
+    loadRandomPage();
+};
+</script>
 </head>
 
 <body>
