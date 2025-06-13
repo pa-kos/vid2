@@ -1,53 +1,77 @@
-name: Update HTML File List
+name: Auto Update Gallery List
 
 on:
   push:
+    branches: [ main ]
     paths:
       - '**.html'
-  workflow_dispatch:
-
-permissions:
-  contents: write
+      - '!suiji.html'
 
 jobs:
-  update-file-list:
+  update-list:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # 强制获取最新版本
+          ref: ${{ github.ref }}
 
-    - name: Find HTML files
-      id: find-files
-      run: |
-        # 查找所有HTML文件（排除suiji.html）
-        files=$(find . -name "*.html" -not -name "suiji.html" -printf '"https://%h.github.io/%p",\n' | sed 's|/./|/|g')
-        
-        # 生成JSON数组格式
-        files_list="[${files%?}]"  # 移除最后的逗号
-        echo "files_list=${files_list}" >> $GITHUB_OUTPUT
-        echo "生成的文件列表："
-        echo "${files_list}"
+      - name: Generate HTML array
+        id: generate-array
+        run: |
+          # 获取所有HTML文件（排除suiji.html）
+          HTML_FILES=$(find . -name "*.html" ! -name "suiji.html" -printf '%P\n' | sort)
+          
+          # 生成标准的JavaScript数组格式
+          echo "let htmlFiles = [" > array.txt
+          while IFS= read -r file; do
+            echo "  'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$file'," >> array.txt
+          done <<< "$HTML_FILES"
+          echo "];" >> array.txt
+          
+          # 存储为多行环境变量（保留格式）
+          ARRAY_CONTENT=$(cat array.txt)
+          echo "ARRAY_CONTENT<<EOF" >> $GITHUB_ENV
+          echo "$ARRAY_CONTENT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          # 调试输出
+          echo "生成的数组内容："
+          cat array.txt
 
-    - name: Update suiji.html
-      run: |
-        # 使用精确匹配替换
-        replacement="let htmlFiles = ${files_list}; // Auto-updated"
-        sed -i "s|let htmlFiles = \['https://[^']*REPLACE_ME\.html'\]; // !WORKFLOW-REPLACE-MARKER!|${replacement}|g" suiji.html
-        
-        echo "=== 替换结果验证 ==="
-        grep -A5 "let htmlFiles" suiji.html
+      - name: Update suiji.html
+        run: |
+          # 使用perl进行精确替换（保留格式）
+          perl -i -pe '
+            BEGIN { $/ = undef; $replace = $ENV{ARRAY_CONTENT}; }
+            s/(let htmlFiles = )\[.*?\];/$1$replace/s;
+          ' suiji.html
+          
+          # 验证替换结果
+          echo "=== 替换结果验证 ==="
+          grep -A10 "let htmlFiles" suiji.html
+          
+          # 确保替换成功
+          if ! grep -q "$(head -n1 array.txt)" suiji.html; then
+            echo "❌ 替换失败！"
+            exit 1
+          fi
 
-    - name: Commit changes
-      run: |
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
-        git add suiji.html
-        if ! git diff --cached --quiet; then
-          git commit -m "Auto-update HTML file list [skip ci]"
-          git push
-        else
-          echo "没有检测到文件变更"
-        fi
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+          # 检查是否有变更
+          if ! git diff --quiet suiji.html; then
+            git add suiji.html
+            git commit -m "Auto-update gallery list [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+            echo "✅ 更新已提交"
+          else
+            echo "🟢 无变更需要提交"
+          fi
