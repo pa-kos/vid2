@@ -1,52 +1,35 @@
-name: Auto Update Gallery List
+name: Update HTML Files List
+
 on:
   push:
-    branches: [ main ]
     paths:
-      - '**.html'
-      - '!suiji.html'
+      - '**.html'  # 当HTML文件有变动时触发
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
   update-list:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Generate proper array format
-        id: generate-array
-        run: |
-          # 获取HTML文件列表（排除自身）
-          HTML_FILES=$(find . -name "*.html" ! -name "suiji.html" -printf '%P\n')
-          
-          # 生成标准JS数组格式（直接换行，无转义符）
-          echo "let htmlFiles = [" > array.txt
-          while IFS= read -r file; do
-            echo "    'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$file'," >> array.txt
-          done <<< "$HTML_FILES"
-          echo "];" >> array.txt
-          
-          # 存储为多行环境变量
-          echo "HTML_ARRAY<<EOF" >> $GITHUB_ENV
-          cat array.txt >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      - name: Update HTML file
-        run: |
-          # 使用perl进行原生换行替换
-          perl -i -pe '
-            BEGIN { $/ = undef; $new = $ENV{HTML_ARRAY}; }
-            s|let htmlFiles = \[.*?\];|$new|s
-          ' suiji.html
-          
-          # 提交更改
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git diff --quiet || {
-            git add suiji.html
-            git commit -m "Auto-update gallery list [skip ci]"
-            git push
-          }
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Find HTML files
+      id: find-files
+      run: |
+        # 查找所有HTML文件（排除suiji.html本身）
+        files=$(find . -name "*.html" -not -name "suiji.html" -printf '"https://pa-kos.github.io/vid2/%P",\n')
+        echo "files_list=${files%?}" >> $GITHUB_OUTPUT  # 移除最后的逗号
+        
+    - name: Update suiji.html
+      run: |
+        # 替换suiji.html中的htmlFiles数组
+        sed -i "s|let htmlFiles = \[\];|let htmlFiles = [${files_list}];|g" suiji.html
+        
+    - name: Commit changes
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add suiji.html
+        git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update HTML files list"
+        git push
