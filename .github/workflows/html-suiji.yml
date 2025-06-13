@@ -17,55 +17,46 @@ jobs:
         fetch-depth: 0
     
     - name: Setup environment
-      run: |
-        sudo apt-get install -y jq
-        mkdir -p tmp
-        
-    - name: Find valid HTML files
+      run: sudo apt-get install -y jq
+    
+    - name: Find and validate HTML files
       id: file-finder
       run: |
-        # 只查找根目录下的HTML文件，排除子目录和suiji.html
-        find . -maxdepth 1 -name "*.html" -not -name "suiji.html" -printf '%P\n' > tmp/files.txt
-        
-        # 验证并格式化URL
-        echo "VALID_FILES=[" > tmp/valid_files.txt
-        while IFS= read -r file; do
-          if [[ "$file" == */* ]]; then
-            echo "跳过包含子目录的文件: $file" >&2
+        # 1. 查找有效的HTML文件
+        find . -maxdepth 1 -name "*.html" -not -name "suiji.html" -printf '%P\n' | while read -r file; do
+          if [[ "$file" =~ ^[a-zA-Z0-9_.-]+\.html$ ]]; then
+            echo "\"https://pa-kos.github.io/vid2/$file\""
           else
-            echo "\"https://pa-kos.github.io/vid2/$file\"," >> tmp/valid_files.txt
+            echo "跳过无效文件名: $file" >&2
           fi
-        done < tmp/files.txt
+        done > valid_files.txt
         
-        # 移除最后一个逗号并闭合数组
-        sed -i '$ s/,$//' tmp/valid_files.txt
-        echo "]" >> tmp/valid_files.txt
+        # 2. 手动构建JSON数组（避免jq解析问题）
+        echo "[" > files_array.json
+        paste -sd, valid_files.txt >> files_array.json
+        echo "]" >> files_array.json
         
-        # 转换为单行JSON
-        files_json=$(jq -c '.' tmp/valid_files.txt)
-        echo "files_list=${files_json}" >> $GITHUB_OUTPUT
-        echo "最终有效文件列表:"
-        cat tmp/valid_files.txt
+        # 3. 验证并输出
+        files_json=$(tr -d '\n' < files_array.json)
+        echo "生成的文件列表: $files_json"
+        echo "files_list=$files_json" >> $GITHUB_OUTPUT
         
     - name: Update suiji.html
       run: |
-        # 使用精确模式替换
-        replacement="let htmlFiles = ${files_list}; // Auto-updated by GitHub Actions"
-        sed -i "s|let htmlFiles = \\[.*\\]; // Auto-updated by GitHub Actions|${replacement}|g" suiji.html
-        sed -i "s|let htmlFiles = \\['https://YOUR_GITHUB_USERNAME.github.io/vid2/placeholder.html'\\];|${replacement}|g" suiji.html
+        # 安全替换（兼容两种初始格式）
+        replacement="let htmlFiles = ${files_list}; // Auto-updated"
+        sed -i -E "s|let htmlFiles = \['https://YOUR_GITHUB_USERNAME[^']*'\];|${replacement}|g" suiji.html
+        sed -i -E "s|let htmlFiles = \[[^]]*\]; // Auto-updated|${replacement}|g" suiji.html
         
-        echo "更新后的内容:"
-        grep -A5 "let htmlFiles" suiji.html
+        echo "更新结果验证:"
+        grep -A2 "let htmlFiles" suiji.html
         
     - name: Commit changes
-      if: always()
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         git add suiji.html
-        if ! git diff --staged --quiet; then
-          git commit -m "Auto-update HTML files list [skip ci]"
+        if ! git diff --cached --quiet; then
+          git commit -m "Auto-update files list [skip ci]"
           git push
-        else
-          echo "没有检测到文件变更"
         fi
