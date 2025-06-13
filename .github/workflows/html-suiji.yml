@@ -1,4 +1,4 @@
-name: Update HTML Files List
+name: Force Update Files List
 
 on:
   push:
@@ -6,52 +6,57 @@ on:
       - '**.html'
   workflow_dispatch:
 
-permissions: write-all  # 关键权限设置
+# 关键权限声明（覆盖仓库默认设置）
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  update-list:
+  nuclear-update:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     
     steps:
-    - name: Checkout with full history
+    - name: Checkout with full power
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Find HTML files
-      id: find-files
+    - name: Find files like a boss
+      id: hunter
       run: |
-        # 生成标准文件列表（完全绕过解析问题）
-        files=$(find . -maxdepth 1 -name "*.html" -not -name "suiji.html" -printf '"https://pa-kos.github.io/vid2/%P",\n')
-        echo "[" > files.json
-        echo "${files%?}" >> files.json  # 移除末尾逗号
-        echo "]" >> files.json
-        files_json=$(tr -d '\n\r' < files.json)
-        echo "files_list=${files_json}" >> $GITHUB_OUTPUT
-        echo "生成列表：${files_json}"
+        # 生成绝对正确的文件列表
+        mapfile -t files < <(find . -maxdepth 1 -name "*.html" -not -name "suiji.html" -printf '%P\n')
+        printf -v files_list '"https://pa-kos.github.io/vid2/%s",' "${files[@]}"
+        files_list="[${files_list%,}]"
+        echo "files_list=${files_list}" >> $GITHUB_OUTPUT
+        echo "🔍 找到文件: ${files_list}"
 
-    - name: Nuclear replacement
+    - name: Atomic replacement
       run: |
-        # 使用Perl进行原子级替换（无视所有格式问题）
+        # 使用Ruby进行军用级替换（无视所有格式问题）
         replacement="let htmlFiles = ${files_list}; // !AUTO-UPDATED!"
-        perl -i -pe '
-          BEGIN { $replacement = qq{'"${replacement}"'}; }
-          if (/!AUTO-UPDATED-MARKER-V2!/../!REPLACE-THIS-LINE-V2!/) {
-            s/let htmlFiles = .*?;/'"${replacement}"';/ if /!REPLACE-THIS-LINE-V2!/;
-          }
+        ruby -i -pe '
+          if /!AUTO-UPDATED-MARKER-V2!/
+            $marker = true
+          elsif $marker && /!REPLACE-THIS-LINE-V2!/
+            $_ = "let htmlFiles = #{ENV['replacement']};\n"
+            $marker = false
+          end
         ' suiji.html
 
         echo "=== 替换验证 ==="
         grep -A3 "htmlFiles" suiji.html
         if ! grep -q "${files_list}" suiji.html; then
-          echo "❌ 替换失败！"
+          echo "❌ 终极替换失败！"
           exit 1
         fi
 
-    - name: Force push changes
+    - name: Terminator push
       run: |
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions Terminator"
+        git config --global user.email "terminator@github.com"
         git add suiji.html
-        git commit -m "FORCE UPDATE: File list" || echo "无变更"
-        git push origin HEAD:${GITHUB_REF#refs/heads/} --force
+        git commit -m "TERMINATOR UPDATE: $(date +'%Y%m%d-%H%M%S')" || echo "无变更可提交"
+        git push origin HEAD:${GITHUB_REF#refs/heads/} --force-with-lease
