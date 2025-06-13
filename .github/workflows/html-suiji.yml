@@ -30,10 +30,11 @@ jobs:
       run: sudo apt-get install -y jq
         
     - name: Update suiji.html
-      run: |
-        # 替换suiji.html中的htmlFiles数组
-        sed -i "s|let htmlFiles = \\[\\];|let htmlFiles = ${files_list};|g" suiji.html
-        echo "Updated suiji.html with files: ${files_list}"
+  run: |
+    # 使用精确匹配替换占位符数组
+    sed -i "s|let htmlFiles = \\['https://YOUR_GITHUB_USERNAME.github.io/vid2/placeholder.html'\\];|let htmlFiles = ${files_list};|g" suiji.html
+    echo "替换结果："
+    grep -A5 "let htmlFiles" suiji.html
         
     - name: Commit and push changes
       run: |
