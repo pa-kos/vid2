@@ -16,6 +16,9 @@ jobs:
       with:
         fetch-depth: 0
     
+    - name: Install jq
+      run: sudo apt-get install -y jq
+    
     - name: Find HTML files
       id: find-files
       run: |
@@ -26,22 +29,19 @@ jobs:
         echo "files_list=${files_json}" >> $GITHUB_OUTPUT
         echo "Generated files list: ${files_json}"
         
-    - name: Install jq
-      run: sudo apt-get install -y jq
-        
     - name: Update suiji.html
-  run: |
-    # 使用精确匹配替换占位符数组
-    sed -i "s|let htmlFiles = \\['https://YOUR_GITHUB_USERNAME.github.io/vid2/placeholder.html'\\];|let htmlFiles = ${files_list};|g" suiji.html
-    echo "替换结果："
-    grep -A5 "let htmlFiles" suiji.html
+      run: |
+        # 替换suiji.html中的htmlFiles数组
+        sed -i "s|let htmlFiles = \\['https://YOUR_GITHUB_USERNAME.github.io/vid2/placeholder.html'\\];|let htmlFiles = ${files_list};|g" suiji.html
+        echo "Updated content:"
+        grep -A5 "let htmlFiles" suiji.html
         
-    - name: Commit and push changes
+    - name: Commit changes
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         git add suiji.html
-        if git diff --quiet --staged; then
+        if git diff --staged --quiet; then
           echo "No changes to commit"
         else
           git commit -m "Auto-update HTML files list [skip ci]"
