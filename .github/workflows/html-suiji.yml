@@ -1,4 +1,4 @@
-name: Force Update Files List
+name: Update HTML File List
 
 on:
   push:
@@ -6,57 +6,48 @@ on:
       - '**.html'
   workflow_dispatch:
 
-# 关键权限声明（覆盖仓库默认设置）
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
-  nuclear-update:
+  update-file-list:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     
     steps:
-    - name: Checkout with full power
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Find files like a boss
-      id: hunter
+    - name: Find HTML files
+      id: find-files
       run: |
-        # 生成绝对正确的文件列表
-        mapfile -t files < <(find . -maxdepth 1 -name "*.html" -not -name "suiji.html" -printf '%P\n')
-        printf -v files_list '"https://pa-kos.github.io/vid2/%s",' "${files[@]}"
-        files_list="[${files_list%,}]"
+        # 查找所有HTML文件（排除suiji.html）
+        files=$(find . -name "*.html" -not -name "suiji.html" -printf '"https://%h.github.io/%p",\n' | sed 's|/./|/|g')
+        
+        # 生成JSON数组格式
+        files_list="[${files%?}]"  # 移除最后的逗号
         echo "files_list=${files_list}" >> $GITHUB_OUTPUT
-        echo "🔍 找到文件: ${files_list}"
+        echo "生成的文件列表："
+        echo "${files_list}"
 
-    - name: Atomic replacement
+    - name: Update suiji.html
       run: |
-        # 使用Ruby进行军用级替换（无视所有格式问题）
-        replacement="let htmlFiles = ${files_list}; // !AUTO-UPDATED!"
-        ruby -i -pe '
-          if /!AUTO-UPDATED-MARKER-V2!/
-            $marker = true
-          elsif $marker && /!REPLACE-THIS-LINE-V2!/
-            $_ = "let htmlFiles = #{ENV['replacement']};\n"
-            $marker = false
-          end
-        ' suiji.html
+        # 使用精确匹配替换
+        replacement="let htmlFiles = ${files_list}; // Auto-updated"
+        sed -i "s|let htmlFiles = \['https://[^']*REPLACE_ME\.html'\]; // !WORKFLOW-REPLACE-MARKER!|${replacement}|g" suiji.html
+        
+        echo "=== 替换结果验证 ==="
+        grep -A5 "let htmlFiles" suiji.html
 
-        echo "=== 替换验证 ==="
-        grep -A3 "htmlFiles" suiji.html
-        if ! grep -q "${files_list}" suiji.html; then
-          echo "❌ 终极替换失败！"
-          exit 1
-        fi
-
-    - name: Terminator push
+    - name: Commit changes
       run: |
-        git config --global user.name "GitHub Actions Terminator"
-        git config --global user.email "terminator@github.com"
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
         git add suiji.html
-        git commit -m "TERMINATOR UPDATE: $(date +'%Y%m%d-%H%M%S')" || echo "无变更可提交"
-        git push origin HEAD:${GITHUB_REF#refs/heads/} --force-with-lease
+        if ! git diff --cached --quiet; then
+          git commit -m "Auto-update HTML file list [skip ci]"
+          git push
+        else
+          echo "没有检测到文件变更"
+        fi
