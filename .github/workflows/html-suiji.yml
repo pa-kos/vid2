@@ -11,84 +11,53 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    # 第一步：检出代码
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        persist-credentials: false
 
-    # 第二步：安装依赖工具
-    - name: Setup environment
+    - name: Find HTML files
+      id: find-files
       run: |
-        sudo apt-get update
-        sudo apt-get install -y jq sed
-
-    # 第三步：查找并验证HTML文件
-    - name: Find valid HTML files
-      id: file-finder
-      run: |
-        # 1. 查找根目录下的HTML文件（排除suiji.html和子目录）
-        find . -maxdepth 1 -name "*.html" -not -name "suiji.html" -printf '%P\n' > files.txt
-        
-        # 2. 生成标准JSON数组（完全绕过jq解析问题）
-        echo -n "[" > files_array.json
-        while IFS= read -r file; do
-          if [[ "$file" =~ ^[a-zA-Z0-9_.-]+\.html$ ]]; then
-            echo -n "\"https://pa-kos.github.io/vid2/$file\"," >> files_array.json
-          fi
-        done < files.txt
-        # 移除末尾逗号并闭合数组
-        truncate -s-1 files_array.json 2>/dev/null || true
-        echo "]" >> files_array.json
-        
+        # 1. 查找有效的HTML文件
+        files=$(find . -maxdepth 1 -name "*.html" -not -name "suiji.html" -printf '"https://pa-kos.github.io/vid2/%P",\n')
+        # 2. 手动构建JSON数组（完全绕过所有解析问题）
+        echo "[" > files.json
+        echo "${files%?}" >> files.json  # 移除最后一个逗号
+        echo "]" >> files.json
         # 3. 输出结果
-        files_json=$(cat files_array.json | tr -d '\n')
+        files_json=$(tr -d '\n' < files.json)
         echo "files_list=${files_json}" >> $GITHUB_OUTPUT
         echo "生成的文件列表：${files_json}"
 
-    # 第四步：更新suiji.html文件
     - name: Update suiji.html
       run: |
-        # 1. 验证目标文件存在
-        if [ ! -f suiji.html ]; then
-          echo "错误：suiji.html 文件不存在！"
-          exit 1
-        fi
-
-        # 2. 严格模式替换（兼容所有换行符格式）
+        # 1. 读取要注入的内容
         replacement="let htmlFiles = ${files_list}; // !AUTO-UPDATED!"
-        sed -i -E ':a;N;$!ba;s|// !AUTO-UPDATED-FILES!.*[\r\n]+let htmlFiles = \['\''https://[^'\'']+REPLACE_ME\.html'\''\];.*[\r\n]+|// !AUTO-UPDATED-FILES! (DO NOT EDIT THIS LINE)\n'"${replacement}"'\n|g' suiji.html
-
+        
+        # 2. 使用awk进行绝对精确替换（无视空格/换行符问题）
+        awk -v rep="$replacement" '
+        /!AUTO-UPDATED-MARKER!/ {mark=1; print; next}
+        mark && /!REPLACE-LINE!/ {print rep; mark=0; next}
+        {print}
+        ' suiji.html > temp.html && mv temp.html suiji.html
+        
         # 3. 验证替换结果
-        echo "=== 替换结果验证 ==="
-        grep -A2 "let htmlFiles" suiji.html
+        echo "=== 替换结果 ==="
+        grep -A3 "let htmlFiles" suiji.html
         if ! grep -q "${files_list}" suiji.html; then
           echo "❌ 替换失败！"
           exit 1
         fi
 
-    # 第五步：提交更改
     - name: Commit changes
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        
-        # 强制清除缓存
-        git rm --cached suiji.html 2>/dev/null || true
         git add suiji.html
-        
         if ! git diff --cached --quiet; then
           git commit -m "Auto-update files list [skip ci]"
-          git push origin HEAD:${GITHUB_REF#refs/heads/}
+          git push
         else
-          echo "⚠️ 没有检测到文件变更"
+          echo "⚠️ 未检测到变更（可能内容相同）"
         fi
-
-    # 第六步：最终验证
-    - name: Verify update
-      run: |
-        echo "=== 最终文件内容 ==="
-        grep -A5 "let htmlFiles" suiji.html
-        echo "=== 仓库状态 ==="
-        git status
