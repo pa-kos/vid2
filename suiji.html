@@ -131,57 +131,19 @@ let htmlFiles = [
   'https://PLACEHOLDER.github.io/vid2/REPLACE_ME.html'  // 工作流将替换这部分
 ];
 let currentLoadedPage = '';
-// 检查是否为真实数组
-if (!Array.isArray(htmlFiles)) {
-    console.error("错误：htmlFiles不是数组！");
-    htmlFiles = []; // 重置为空数组
-}
-
-        // 随机加载 HTML 文件内容
-            async function loadRandomPage() {
+// 随机加载 HTML 文件内容
+        async function loadRandomPage() {
             if (htmlFiles.length === 0) {
                 // 如果数组为空，显示错误消息
                 document.getElementById("content").innerHTML = `
-                <h1>暂时没有可用的内容</h1>
-                <p>请稍后再试或联系管理员</p>
-                <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>`;
---
-            const randomIndex = Math.floor(Math.random() * htmlFiles.length);
-            const randomFile = htmlFiles[randomIndex];
-            currentLoadedPage = randomFile;
-            console.log(`Trying to load ${randomFile}`);
-
-            try {
-                // 请求文件内容
---
-                    htmlFiles.splice(randomIndex, 1);
-                    loadRandomPage();
-                }
-            } catch (error) {
-                // 捕获其他错误，将文件从数组中移除并重新尝试
-                console.error(`Error loading file ${randomFile}: ${error.message}`);
-                htmlFiles.splice(randomIndex, 1);
-                loadRandomPage();
-            }
-        }
-
-        // 显示收藏弹窗
-
-        // 随机加载 HTML 文件内容
-            async function loadRandomPage() {
-            if (htmlFiles.length === 0) {
-                // 如果数组为空，显示错误消息
-                document.getElementById("content").innerHTML = `
-                <h1>暂时没有可用的内容</h1>
-                <p>请稍后再试或联系管理员</p>
-                <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>`;
+          <p>All files failed to load. Please try again later.</p>`;
                 return;
             }
 
             // 随机选择文件
             const randomIndex = Math.floor(Math.random() * htmlFiles.length);
             const randomFile = htmlFiles[randomIndex];
-            currentLoadedPage = randomFile;
+            currentLoadedPage = randomFile; // 保存当前加载的页面链接
             console.log(`Trying to load ${randomFile}`);
 
             try {
@@ -192,19 +154,20 @@ if (!Array.isArray(htmlFiles)) {
                     // 加载成功，显示内容
                     const content = await response.text();
                     document.getElementById("content").innerHTML = content;
+
                     // 显示收藏按钮
                     document.getElementById("favoriteButton").style.display = 'flex';
                 } else {
-                    // 如果返回404，将文件从数组中移除并重新尝试
+                    // 如果返回 404，将文件从数组中移除并重新尝试
                     console.warn(`File ${randomFile} returned status: ${response.status}`);
-                    htmlFiles.splice(randomIndex, 1);
-                    loadRandomPage();
+                    htmlFiles.splice(randomIndex, 1); // 从数组中移除
+                    loadRandomPage(); // 重新尝试加载
                 }
             } catch (error) {
                 // 捕获其他错误，将文件从数组中移除并重新尝试
                 console.error(`Error loading file ${randomFile}: ${error.message}`);
-                htmlFiles.splice(randomIndex, 1);
-                loadRandomPage();
+                htmlFiles.splice(randomIndex, 1); // 从数组中移除
+                loadRandomPage(); // 重新尝试加载
             }
         }
 
@@ -213,7 +176,7 @@ if (!Array.isArray(htmlFiles)) {
             const modal = document.getElementById('favoriteModal');
             const background = document.getElementById('modalBackground');
             const textarea = document.getElementById('pageLink');
-            textarea.value = currentLoadedPage;
+            textarea.value = currentLoadedPage; // 设置当前加载的页面链接
             modal.style.display = 'block';
             background.style.display = 'block';
         }
@@ -234,10 +197,8 @@ if (!Array.isArray(htmlFiles)) {
             alert('链接已复制到剪贴板！');
         }
 
-        // 页面加载时调用函数
-        window.onload = () => {
-            loadRandomPage();
-        };
-    </script>
+        
+        window.onload = loadRandomPage;
+</script>
 </body>
 </html>
