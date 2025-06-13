@@ -9,7 +9,6 @@
         #favoriteButton {
             position: fixed;
             bottom: 80px;
-            /* 调整按钮位置 */
             right: 20px;
             width: 50px;
             height: 50px;
@@ -18,7 +17,6 @@
             border: none;
             border-radius: 50%;
             display: none;
-            /* 初始隐藏，加载完成后显示 */
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -39,14 +37,11 @@
             left: 50%;
             transform: translate(-50%, -50%);
             width: 80%;
-            /* 增大窗口宽度 */
             max-width: 500px;
-            /* 设置最大宽度 */
             background-color: white;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             padding: 30px;
             border-radius: 15px;
-            /* 圆角增加 */
             text-align: center;
             z-index: 1000;
         }
@@ -54,7 +49,6 @@
         #favoriteModal textarea {
             width: 100%;
             height: 70px;
-            /* 增大文本框高度 */
             margin: 10px 0;
             padding: 10px;
             resize: none;
@@ -73,13 +67,11 @@
             border-radius: 5px;
             color: white;
             background-color: #007bff;
-            /* 蓝色背景 */
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         #favoriteModal button:hover {
             background-color: #0056b3;
-            /* 深蓝色悬停效果 */
         }
 
         /* 模态背景 */
@@ -93,218 +85,123 @@
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 999;
         }
-           /* 加载提示效果 */
-        #loading-state {
-  text-align: center;
-  padding: 30px;
-  background: rgba(255,255,255,0.9);
-  border-radius: 10px;
-  max-width: 300px;
-  margin: 100px auto;
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid #ff6b81;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.progress-bar {
-  height: 6px;
-  background: #eee;
-  border-radius: 3px;
-  margin: 20px 0;
-  overflow: hidden;
-}
-
-.progress {
-  height: 100%;
-  width: 0;
-  background: linear-gradient(90deg, #ff6b81, #ff8e53);
-  transition: width 0.3s;
-}
-
-.hint {
-  font-size: 12px;
-  color: #999;
-  margin-top: 15px;
-}
         
-        /* 错误状态样式 */
-.error {
-  text-align: center;
-  padding: 20px;
-  color: #ff4757;
-}
-.error button {
-  background: #ff6b81;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  margin-top: 10px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-/* 强制显示关键元素 */
-#loading-state, #favoriteButton {
-  display: block !important;
-}
+        #content {
+            text-align: center;
+            padding: 20px;
+        }
         
+        #xunlei {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
     <div id="content">
-        <div id="loading-state">
-        <div class="spinner"></div>
-        <p class="loading-text">乔豆麻袋！正在为你寻找色图...</p>
+        <h1>正在为你寻找色图...请稍后...</h1>
+        <br />
         <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>
-        <div class="progress-bar"><div class="progress"></div></div>
-        <p class="hint">首次加载可能需要3~5秒，请耐心等待❤️</p>
-   </div>
-</div>        
-        
+    </div>
 
     <!-- 悬浮收藏按钮 -->
     <button id="favoriteButton" onclick="showFavoriteModal()">
-        <img src="https://xiaobeirepo.github.io/repo2/Five-pointed_star.svg" alt="收藏"/></button>
+        <img src="https://xiaobeirepo.github.io/repo2/Five-pointed_star.svg" alt="收藏" />
+    </button>
 
     <!-- 收藏弹窗 -->
     <div id="modalBackground" onclick="hideFavoriteModal()"></div>
     <div id="favoriteModal">
         <h2>当前页面链接：</h2>
         <textarea id="pageLink" readonly></textarea>
-        <br/>
+        <br />
         <button onclick="copyToClipboard()">复制链接</button>
         <p>复制页面链接收藏好（添加书签或发给好友）～</p>
         <button onclick="hideFavoriteModal()">关闭</button>
     </div>
+
     <script>
-// 定义 HTML 文件链接数组
-let htmlFiles = [
-    'https://pa-kos.github.io/vid2/TaOPdQLhlnCq.html',
-];
-let currentLoadedPage = '';
-
-// 动态替换链接地址
-function replaceLinksIfNeeded() {
-    const currentDomain = window.location.hostname;
-    if (currentDomain === "repo2-320.pages.dev") {
-        htmlFiles = htmlFiles.map(link =>
-            link.replace(
-                "https://pa-kos.github.io/vid2/", 
-                "https://repo2-320.pages.dev/"
-            )
-        );
-    }
-}
-
-// 随机加载 HTML 文件内容
-        console.log("当前数组内容:", JSON.stringify(htmlFiles));
-console.log("数组长度:", htmlFiles.length);
-
-// 检查是否为真实数组
-if (!Array.isArray(htmlFiles)) {
-    console.error("错误：htmlFiles不是数组！");
-    htmlFiles = []; // 重置为空数组
-}
+        // 自动更新的文件列表（由GitHub Actions填充）
+        let htmlFiles = []; // 初始为空，由工作流自动填充
         
-// 显示加载状态
-// 随机加载逻辑
-async function loadRandomPage() {
-  // 确保有可选文件
-  if (htmlFiles.length === 0) {
-    showError("没有可用的内容文件");
-    return;
-  }
+        let currentLoadedPage = '';
 
-  // 随机选择并赋值
-  currentLoadedPage = htmlFiles[Math.floor(Math.random() * htmlFiles.length)];
-  console.log("当前加载:", currentLoadedPage);
+        // 随机加载 HTML 文件内容
+        async function loadRandomPage() {
+            if (htmlFiles.length === 0) {
+                // 如果数组为空，显示错误消息
+                document.getElementById("content").innerHTML = `
+                <h1>暂时没有可用的内容</h1>
+                <p>请稍后再试或联系管理员</p>
+                <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>`;
+                return;
+            }
 
-  try {
-    showLoading(); // 显示加载动画
-    
-    // 带超时的请求
-    const controller = new AbortController();
-    setTimeout(() => controller.abort(), 10000); // 10秒超时
-    
-    const response = await fetch(currentLoadedPage, {
-      signal: controller.signal,
-      cache: 'no-store' // 跳过缓存
-    });
+            // 随机选择文件
+            const randomIndex = Math.floor(Math.random() * htmlFiles.length);
+            const randomFile = htmlFiles[randomIndex];
+            currentLoadedPage = randomFile;
+            console.log(`Trying to load ${randomFile}`);
 
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-    showContent(await response.text());
-    
-  } catch (error) {
-    showError(`加载失败: ${error.message}`);
-  }
-}
+            try {
+                // 请求文件内容
+                const response = await fetch(randomFile);
 
-// 独立显示函数
-function showLoading() {
-  document.getElementById("content").innerHTML = `
-    <div id="loading-state">
-      <div class="spinner"></div>
-      <p>正在连接资源库...可能需要3~5秒，请耐心等待❤️</p>
-    </div>`;
-}
+                if (response.ok) {
+                    // 加载成功，显示内容
+                    const content = await response.text();
+                    document.getElementById("content").innerHTML = content;
+                    // 显示收藏按钮
+                    document.getElementById("favoriteButton").style.display = 'flex';
+                } else {
+                    // 如果返回404，将文件从数组中移除并重新尝试
+                    console.warn(`File ${randomFile} returned status: ${response.status}`);
+                    htmlFiles.splice(randomIndex, 1);
+                    loadRandomPage();
+                }
+            } catch (error) {
+                // 捕获其他错误，将文件从数组中移除并重新尝试
+                console.error(`Error loading file ${randomFile}: ${error.message}`);
+                htmlFiles.splice(randomIndex, 1);
+                loadRandomPage();
+            }
+        }
 
-function showContent(html) {
-  document.getElementById("content").innerHTML = html;
-  document.getElementById("favoriteButton").style.display = 'flex';
-}
+        // 显示收藏弹窗
+        function showFavoriteModal() {
+            const modal = document.getElementById('favoriteModal');
+            const background = document.getElementById('modalBackground');
+            const textarea = document.getElementById('pageLink');
+            textarea.value = currentLoadedPage;
+            modal.style.display = 'block';
+            background.style.display = 'block';
+        }
 
-function showError(msg) {
-  document.getElementById("content").innerHTML = `
-    <div class="error">
-      <p>${msg}</p>
-      <button onclick="loadRandomPage()">重试</button>
-    </div>`;
-}
+        // 隐藏收藏弹窗
+        function hideFavoriteModal() {
+            const modal = document.getElementById('favoriteModal');
+            const background = document.getElementById('modalBackground');
+            modal.style.display = 'none';
+            background.style.display = 'none';
+        }
 
-// 收藏功能（保持原始UI交互）
-function showFavoriteModal() {
-    document.getElementById('pageLink').value = currentLoadedPage;
-    document.getElementById('favoriteModal').style.display = 'block';
-    document.getElementById('modalBackground').style.display = 'block';
-}
-function hideFavoriteModal() {
-    document.getElementById('favoriteModal').style.display = 'none';
-    document.getElementById('modalBackground').style.display = 'none';
-}
-function copyToClipboard() {
-    const textarea = document.getElementById('pageLink');
-    textarea.select();
-    document.execCommand('copy');
-    alert('链接已复制到剪贴板！');
-}
+        // 复制链接到剪贴板
+        function copyToClipboard() {
+            const textarea = document.getElementById('pageLink');
+            textarea.select();
+            document.execCommand('copy');
+            alert('链接已复制到剪贴板！');
+        }
 
-// 初始化
-// 屏蔽扩展干扰
-window.onload = () => {
-  if (window.chrome?.runtime?.id) {
-    console.warn("检测到浏览器扩展，可能影响功能");
-  }
-
-  replaceLinksIfNeeded();
-  
-  // 保留初始HTML结构（重要！）
-  const initialContent = document.getElementById("content").innerHTML;
-  window.fallbackContent = initialContent;
-
-  loadRandomPage();
-};
-</script>
+        // 页面加载时调用函数
+        window.onload = () => {
+            loadRandomPage();
+        };
+    </script>
 </body>
 </html>
