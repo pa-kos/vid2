@@ -126,10 +126,11 @@
     </div>
 
     <script>
-// 在loadRandomPage()函数开头添加验证
-console.log("当前数组内容:", JSON.stringify(htmlFiles));
-console.log("数组长度:", htmlFiles.length);
-
+// !NUKE-UPDATE-MARKER!
+let htmlFiles = [
+  'https://PLACEHOLDER.github.io/vid2/REPLACE_ME.html'
+];
+let currentLoadedPage = '';
 // 检查是否为真实数组
 if (!Array.isArray(htmlFiles)) {
     console.error("错误：htmlFiles不是数组！");
