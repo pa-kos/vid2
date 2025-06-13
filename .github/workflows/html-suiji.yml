@@ -3,8 +3,8 @@ name: Update HTML Files List
 on:
   push:
     paths:
-      - '**.html'  # 当HTML文件有变动时触发
-  workflow_dispatch:  # 允许手动触发
+      - '**.html'
+  workflow_dispatch:
 
 jobs:
   update-list:
@@ -13,23 +13,36 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+      with:
+        fetch-depth: 0
+    
     - name: Find HTML files
       id: find-files
       run: |
         # 查找所有HTML文件（排除suiji.html本身）
-        files=$(find . -name "*.html" -not -name "suiji.html" -printf '"https://pa-kos.github.io/vid2/%P",\n')
-        echo "files_list=${files%?}" >> $GITHUB_OUTPUT  # 移除最后的逗号
+        files=$(find . -name "*.html" -not -name "suiji.html" -printf '%P\n' | sed 's/.*/"https:\/\/pa-kos.github.io\/vid2\/&"/')
+        # 将文件列表转换为JSON数组格式
+        files_json=$(echo "$files" | jq -s '.')
+        echo "files_list=${files_json}" >> $GITHUB_OUTPUT
+        echo "Generated files list: ${files_json}"
+        
+    - name: Install jq
+      run: sudo apt-get install -y jq
         
     - name: Update suiji.html
-  run: |
-    # 精确替换这行特定格式的代码
-    sed -i "s|let htmlFiles = \\[\\]; // 必须保留这行注释和空数组，工作流依赖这个模式进行替换|let htmlFiles = ${files_list}; // Auto-updated by GitHub Actions|g" suiji.html
+      run: |
+        # 替换suiji.html中的htmlFiles数组
+        sed -i "s|let htmlFiles = \\[\\];|let htmlFiles = ${files_list};|g" suiji.html
+        echo "Updated suiji.html with files: ${files_list}"
         
-    - name: Commit changes
+    - name: Commit and push changes
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         git add suiji.html
-        git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update HTML files list"
-        git push
+        if git diff --quiet --staged; then
+          echo "No changes to commit"
+        else
+          git commit -m "Auto-update HTML files list [skip ci]"
+          git push
+        fi
