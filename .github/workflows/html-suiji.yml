@@ -42,14 +42,18 @@ jobs:
         echo "files_list=$files_json" >> $GITHUB_OUTPUT
         
     - name: Update suiji.html
-      run: |
-        # 安全替换（兼容两种初始格式）
-        replacement="let htmlFiles = ${files_list}; // Auto-updated"
-        sed -i -E "s|let htmlFiles = \['https://YOUR_GITHUB_USERNAME[^']*'\];|${replacement}|g" suiji.html
-        sed -i -E "s|let htmlFiles = \[[^]]*\]; // Auto-updated|${replacement}|g" suiji.html
-        
-        echo "更新结果验证:"
-        grep -A2 "let htmlFiles" suiji.html
+  run: |
+    # 严格模式替换（兼容不同换行符）
+    replacement="let htmlFiles = ${files_list}; // !AUTO-UPDATED!"
+    sed -i -E ':a;N;$!ba;s|// !AUTO-UPDATED-FILES!.*[\r\n]+let htmlFiles = \['https://[^']+REPLACE_ME\.html'\];.*[\r\n]+|// !AUTO-UPDATED-FILES! (DO NOT EDIT THIS LINE)\n${replacement}\n|g' suiji.html
+    
+    # 验证替换
+    echo "=== 替换结果验证 ==="
+    grep -A2 "let htmlFiles" suiji.html
+    if ! grep -q "${files_list}" suiji.html; then
+      echo "❌ 替换失败！"
+      exit 1
+    fi
         
     - name: Commit changes
       run: |
