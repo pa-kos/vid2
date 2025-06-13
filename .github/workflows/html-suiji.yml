@@ -5,66 +5,67 @@ on:
     branches: [ main ]
     paths:
       - '**.html'
-      - '!suiji.html'  # 排除自身文件
-  workflow_dispatch:  # 允许手动触发
+      - '!suiji.html'
+  workflow_dispatch:
 
 permissions:
-  contents: write  # 必需写入权限
+  contents: write
 
 jobs:
   update-html-list:
     runs-on: ubuntu-latest
 
     steps:
-    # 步骤1：检出代码
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # 获取完整提交历史
+        fetch-depth: 0
 
-    # 步骤2：查找所有HTML文件并生成数组
     - name: Generate HTML file list
-      id: generate-list
+      id: file-list
       run: |
-        # 获取所有HTML文件（排除suiji.html）
-        mapfile -d '' files < <(find . -name "*.html" ! -name "suiji.html" -print0 | sort -z)
+        # 1. 查找所有HTML文件（排除suiji.html）
+        find . -name "*.html" ! -name "suiji.html" -printf '%P\n' | sort > files.txt
         
-        # 生成标准JS数组格式
-        echo "let htmlFiles = [" > html_array.txt
-        for file in "${files[@]}"; do
-          file="${file#./}"  # 移除开头的./
-          echo "  'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$file'," >> html_array.txt
-        done
-        echo "];" >> html_array.txt
-
-        # 存储为输出变量
-        echo "html_array=$(cat html_array.txt)" >> $GITHUB_OUTPUT
+        # 2. 生成标准JSON数组（避免格式错误）
+        echo "[" > files.json
+        while IFS= read -r file; do
+          echo "\"https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$file\"," >> files.json
+        done < files.txt
+        # 移除最后一个逗号
+        sed -i '$ s/,$//' files.json
+        echo "]" >> files.json
+        
+        # 3. 输出验证
         echo "=== 生成的文件列表 ==="
-        cat html_array.txt
+        cat files.json
+        
+        # 4. 存储为单行JSON
+        echo "html_array=$(jq -c '.' files.json)" >> $GITHUB_OUTPUT
 
-    # 步骤3：更新suiji.html文件
+    - name: Install jq
+      run: sudo apt-get install -y jq
+
     - name: Update suiji.html
       run: |
-        # 使用精确替换（兼容Windows/Linux换行符）
+        # 使用精确替换
+        replacement="let htmlFiles = $(cat files.json);"
         perl -i -pe '
-          BEGIN { $array = $ENV{html_array}; }
+          BEGIN { $repl = $ENV{replacement}; }
           if (/let htmlFiles = \[/) {
-            $_ = $array;
+            $_ = $repl;
           }
         ' suiji.html
+        
+        echo "=== 替换结果 ==="
+        grep -A5 "let htmlFiles" suiji.html
 
-        echo "=== 替换结果验证 ==="
-        grep -A10 "let htmlFiles" suiji.html
-
-    # 步骤4：提交更改
     - name: Commit changes
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         git add suiji.html
         if ! git diff --cached --quiet; then
-          git commit -m "Auto-update HTML file list [skip ci]"
+          git commit -m "Auto-update HTML list [skip ci]"
           git push
-        else
-          echo "没有检测到文件变更"
         fi
