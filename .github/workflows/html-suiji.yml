@@ -6,12 +6,14 @@ on:
       - '**.html'
   workflow_dispatch:
 
+permissions: write-all  # 关键权限设置
+
 jobs:
   update-list:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
+    - name: Checkout with full history
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
@@ -19,45 +21,37 @@ jobs:
     - name: Find HTML files
       id: find-files
       run: |
-        # 1. 查找有效的HTML文件
+        # 生成标准文件列表（完全绕过解析问题）
         files=$(find . -maxdepth 1 -name "*.html" -not -name "suiji.html" -printf '"https://pa-kos.github.io/vid2/%P",\n')
-        # 2. 手动构建JSON数组（完全绕过所有解析问题）
         echo "[" > files.json
-        echo "${files%?}" >> files.json  # 移除最后一个逗号
+        echo "${files%?}" >> files.json  # 移除末尾逗号
         echo "]" >> files.json
-        # 3. 输出结果
-        files_json=$(tr -d '\n' < files.json)
+        files_json=$(tr -d '\n\r' < files.json)
         echo "files_list=${files_json}" >> $GITHUB_OUTPUT
-        echo "生成的文件列表：${files_json}"
+        echo "生成列表：${files_json}"
 
-    - name: Update suiji.html
+    - name: Nuclear replacement
       run: |
-        # 1. 读取要注入的内容
+        # 使用Perl进行原子级替换（无视所有格式问题）
         replacement="let htmlFiles = ${files_list}; // !AUTO-UPDATED!"
-        
-        # 2. 使用awk进行绝对精确替换（无视空格/换行符问题）
-        awk -v rep="$replacement" '
-        /!AUTO-UPDATED-MARKER!/ {mark=1; print; next}
-        mark && /!REPLACE-LINE!/ {print rep; mark=0; next}
-        {print}
-        ' suiji.html > temp.html && mv temp.html suiji.html
-        
-        # 3. 验证替换结果
-        echo "=== 替换结果 ==="
-        grep -A3 "let htmlFiles" suiji.html
+        perl -i -pe '
+          BEGIN { $replacement = qq{'"${replacement}"'}; }
+          if (/!AUTO-UPDATED-MARKER-V2!/../!REPLACE-THIS-LINE-V2!/) {
+            s/let htmlFiles = .*?;/'"${replacement}"';/ if /!REPLACE-THIS-LINE-V2!/;
+          }
+        ' suiji.html
+
+        echo "=== 替换验证 ==="
+        grep -A3 "htmlFiles" suiji.html
         if ! grep -q "${files_list}" suiji.html; then
           echo "❌ 替换失败！"
           exit 1
         fi
 
-    - name: Commit changes
+    - name: Force push changes
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         git add suiji.html
-        if ! git diff --cached --quiet; then
-          git commit -m "Auto-update files list [skip ci]"
-          git push
-        else
-          echo "⚠️ 未检测到变更（可能内容相同）"
-        fi
+        git commit -m "FORCE UPDATE: File list" || echo "无变更"
+        git push origin HEAD:${GITHUB_REF#refs/heads/} --force
