@@ -22,9 +22,9 @@ jobs:
         echo "files_list=${files%?}" >> $GITHUB_OUTPUT  # 移除最后的逗号
         
     - name: Update suiji.html
-      run: |
-        # 替换suiji.html中的htmlFiles数组
-        sed -i "s|let htmlFiles = \[\];|let htmlFiles = [${files_list}];|g" suiji.html
+  run: |
+    # 精确替换这行特定格式的代码
+    sed -i "s|let htmlFiles = \\[\\]; // 必须保留这行注释和空数组，工作流依赖这个模式进行替换|let htmlFiles = ${files_list}; // Auto-updated by GitHub Actions|g" suiji.html
         
     - name: Commit changes
       run: |
