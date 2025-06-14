@@ -81,6 +81,20 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 999;
+/* 保持原有loading样式不变 */
+            @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+            #loading {
+    margin: 50px 0;
+    text-align: center;
+    font-size: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
         }
     </style>
 
@@ -171,7 +185,12 @@
     </script>
 </head>
 <body>
-    <div id="loading">正在为你寻找色图...请稍后！</div>
+    <div id="loading">
+    <p style="font-size: 24px; margin-bottom: 10px;">正在为你寻找色图...</p>
+    <p style="font-size: 14px; color: #666; margin-bottom: 20px;">请稍候，将从海量资源中为你精选内容</p>
+    <div class="loader"></div>
+    <p style="font-size: 12px; color: #999; margin-top: 20px;">如长时间未响应，请用科学上网</p>
+</div>
     <div id="content"></div>
     <button id="viewAllButton">点我查看所有</button>
     <button id="favoriteButton">
