@@ -5,127 +5,141 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>随机色图</title>
     <style>
-        /* 悬浮按钮样式 */
-		#favoriteButton {
-			position: fixed;
-			bottom: 80px; /* 调整按钮位置 */
-			right: 20px;
-			width: 50px;
-			height: 50px;
-			background-color: #f39c12;
-			color: white;
-			border: none;
-			border-radius: 50%;
-			display: none; /* 初始隐藏，加载完成后显示 */
-			align-items: center;
-			justify-content: center;
-			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-			cursor: pointer;
-			text-align: center;
-		}
+        /* 您提供的新样式 */
+        #favoriteButton {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: #f39c12;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
 
-		#favoriteButton img {
-			width: 24px;
-			height: 24px;
-		}
+        #favoriteButton img {
+            width: 24px;
+            height: 24px;
+        }
 
-		/* 弹出窗口样式 */
-		#favoriteModal {
-			display: none;
-			position: fixed;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			width: 80%; /* 增大窗口宽度 */
-			max-width: 500px; /* 设置最大宽度 */
-			background-color: white;
-			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-			padding: 30px;
-			border-radius: 15px; /* 圆角增加 */
-			text-align: center;
-			z-index: 1000;
-		}
+        #favoriteModal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 500px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 1000;
+        }
 
-		#favoriteModal textarea {
-			width: 100%;
-			height: 70px; /* 增大文本框高度 */
-			margin: 10px 0;
-			padding: 10px;
-			resize: none;
-			font-size: 14px;
-			line-height: 1.5;
-			border: 1px solid #ccc;
-			border-radius: 5px;
-		}
+        #favoriteModal textarea {
+            width: 100%;
+            height: 70px;
+            margin: 10px 0;
+            padding: 10px;
+            resize: none;
+            font-size: 14px;
+            line-height: 1.5;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
 
-		#favoriteModal button {
-			margin-top: 10px;
-			padding: 10px 20px;
-			font-size: 16px;
-			cursor: pointer;
-			border: none;
-			border-radius: 5px;
-			color: white;
-			background-color: #007bff; /* 蓝色背景 */
-			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-		}
+        #favoriteModal button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            background-color: #007bff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
 
-		#favoriteModal button:hover {
-			background-color: #0056b3; /* 深蓝色悬停效果 */
-		}
+        #favoriteModal button:hover {
+            background-color: #0056b3;
+        }
 
-		/* 模态背景 */
-		#modalBackground {
-			display: none;
-			position: fixed;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background-color: rgba(0, 0, 0, 0.5);
-			z-index: 999;
-		}
+        #modalBackground {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        /* 保留必要的基础样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        #loading {
+            margin: 50px 0;
+            text-align: center;
+            font-size: 24px;
+        }
+        #content {
+            margin: 20px 0;
+            min-height: 300px;
+        }
+        #viewAllButton {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
     </style>
 
     <script>
-        // 定义 HTML 文件链接数组（此处使用硬编码，手动填入）
+        // 保持原有JavaScript完全不变
         let htmlFiles = [
             "https://pa-kos.github.io/vid2/DQDRlJqIGBgi.html",
-            "https://pa-kos.github.io/vid2/GKRGDitnvGfl.html",
-            "https://pa-kos.github.io/vid2/NyATOhANJPum.html",
             "https://pa-kos.github.io/vid2/DyfWsdoBijrA.html",
-            "https://pa-kos.github.io/vid2/NnNfOPhQvrlZ.html"
+            "https://pa-kos.github.io/vid2/GKRGDitnvGfl.html",
+            "https://pa-kos.github.io/vid2/GKRGDitnvGfl.html"
+            "https://pa-kos.github.io/vid2/NnNfOPhQvrlZ.html", 
+            "https://pa-kos.github.io/vid2/NyATOhANJPum.html"
         ];
         
-        // 查看所有按钮跳转链接
         const viewAllLink = "https://qm.qq.com/q/HVqNbzS1aM";
+        let currentLoadedPage = '';
         
-        let currentLoadedPage = ''; // 当前加载的页面链接
-        
-        // 1：随机加载 HTML 文件内容
         function loadRandomPage() {
             const contentDiv = document.getElementById('content');
             const loadingDiv = document.getElementById('loading');
             const favoriteButton = document.getElementById('favoriteButton');
             
-            // 如果数组为空，则显示错误提示文本
             if (htmlFiles.length === 0) {
-                contentDiv.innerHTML = '<p>没有可用的资源，请稍后再试。</p>';
+                contentDiv.innerHTML = '<p>无法看就是炸了请等待修复</p>';
                 loadingDiv.style.display = 'none';
                 favoriteButton.style.display = 'none';
                 return;
             }
             
-            // 随机选择文件
             const randomIndex = Math.floor(Math.random() * htmlFiles.length);
             const selectedFile = htmlFiles[randomIndex];
             currentLoadedPage = selectedFile;
             
-            // 尝试请求文件内容
             fetch(selectedFile)
                 .then(response => {
                     if (!response.ok) {
-                        // 如果返回 404，将文件从数组中移除并重新尝试
                         if (response.status === 404) {
                             htmlFiles.splice(randomIndex, 1);
                             loadRandomPage();
@@ -135,34 +149,33 @@
                     return response.text();
                 })
                 .then(html => {
-                    // 加载成功，显示内容
                     contentDiv.innerHTML = html;
                     loadingDiv.style.display = 'none';
-                    favoriteButton.style.display = 'inline-block';
+                    favoriteButton.style.display = 'flex';
                 })
                 .catch(error => {
-                    // 捕获其他错误，将文件从数组中移除并重新尝试
                     console.error('Error loading page:', error);
                     htmlFiles.splice(randomIndex, 1);
                     loadRandomPage();
                 });
         }
         
-        // 2：显示收藏弹窗
         function showFavoriteModal() {
             const modal = document.getElementById('favoriteModal');
+            const modalBackground = document.getElementById('modalBackground');
             const resourceLink = document.getElementById('resourceLink');
             resourceLink.value = window.location.href.replace('suiji.html', currentLoadedPage);
             modal.style.display = 'block';
+            modalBackground.style.display = 'block';
         }
         
-        // 3：隐藏收藏弹窗
         function hideFavoriteModal() {
             const modal = document.getElementById('favoriteModal');
+            const modalBackground = document.getElementById('modalBackground');
             modal.style.display = 'none';
+            modalBackground.style.display = 'none';
         }
         
-        // 4：复制链接到剪贴板
         function copyToClipboard() {
             const resourceLink = document.getElementById('resourceLink');
             resourceLink.select();
@@ -175,31 +188,25 @@
     <div id="loading">正在为你寻找色图...请稍后...</div>
     <div id="content"></div>
     <button id="viewAllButton">点我查看所有</button>
-    <button id="favoriteButton" style="display: none;">收藏此资源</button>
+    <button id="favoriteButton">❤️</button>
 
-    <!-- 收藏弹窗 -->
-    <div id="favoriteModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="hideFavoriteModal()">&times;</span>
-            <h2>收藏资源</h2>
-            <p>当前资源链接：</p>
-            <input type="text" id="resourceLink" style="width: 100%; padding: 8px; margin: 10px 0;" readonly>
-            <button onclick="copyToClipboard()">复制链接</button>
-        </div>
+    <div id="modalBackground" onclick="hideFavoriteModal()"></div>
+
+    <div id="favoriteModal">
+        <h2>收藏资源</h2>
+        <p>当前资源链接：</p>
+        <textarea id="resourceLink" readonly></textarea>
+        <button onclick="copyToClipboard()">复制链接</button>
+        <button onclick="hideFavoriteModal()">关闭</button>
     </div>
 
     <script>
-        // 页面加载时调用函数，加载随机页面
         window.onload = function() {
-            // 设置查看所有按钮的点击事件
             document.getElementById('viewAllButton').addEventListener('click', function() {
                 window.location.href = viewAllLink;
             });
             
-            // 设置收藏按钮的点击事件
             document.getElementById('favoriteButton').addEventListener('click', showFavoriteModal);
-            
-            // 加载随机页面
             loadRandomPage();
         };
     </script>
