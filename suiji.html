@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>随机色图</title>
+    <title>随机资源加载</title>
     <style>
-        /* 您提供的新样式 */
+        /* 悬浮按钮样式 */
         #favoriteButton {
             position: fixed;
             bottom: 80px;
@@ -13,7 +13,6 @@
             width: 50px;
             height: 50px;
             background-color: #f39c12;
-            color: white;
             border: none;
             border-radius: 50%;
             display: none;
@@ -28,6 +27,7 @@
             height: 24px;
         }
 
+        /* 弹出窗口样式 */
         #favoriteModal {
             display: none;
             position: fixed;
@@ -82,43 +82,18 @@
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 999;
         }
-
-        /* 保留必要的基础样式 */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
-        #loading {
-            margin: 50px 0;
-            text-align: center;
-            font-size: 24px;
-        }
-        #content {
-            margin: 20px 0;
-            min-height: 300px;
-        }
-        #viewAllButton {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
     </style>
 
     <script>
-        // 保持原有JavaScript完全不变
         let htmlFiles = [
             'https://pa-kos.github.io/vid2/DQDRlJqIGBgi.html',
-            'https://pa-kos.github.io/vid2/DyfWsdoBijrA.html',
-            'https://pa-kos.github.io/vid2/GKRGDitnvGfl.html',
-            'https://pa-kos.github.io/vid2/GKRGDitnvGfl.html',
-            'https://pa-kos.github.io/vid2/NnNfOPhQvrlZ.html', 
-            'https://pa-kos.github.io/vid2/NyATOhANJPum.html'
+           'https://pa-kos.github.io/vid2/DyfWsdoBijrA.html',
+            'https://pa-kos.github.io/vid2/GKRGDitnvGfl.html'
         ];
         
-        const viewAllLink = "https://qm.qq.com/q/HVqNbzS1aM";
+        const viewAllLink = "all-resources.html";
+        const baseUrl = "https://pa-kos.github.io/vid2/"; // 定义基础URL
+        
         let currentLoadedPage = '';
         
         function loadRandomPage() {
@@ -127,7 +102,7 @@
             const favoriteButton = document.getElementById('favoriteButton');
             
             if (htmlFiles.length === 0) {
-                contentDiv.innerHTML = '<p>无法看就是炸了请等待修复</p>';
+                contentDiv.innerHTML = '<p>没有可用的资源，请稍后再试。</p>';
                 loadingDiv.style.display = 'none';
                 favoriteButton.style.display = 'none';
                 return;
@@ -144,7 +119,7 @@
                             htmlFiles.splice(randomIndex, 1);
                             loadRandomPage();
                         }
-                        throw new Error('Network response was not ok');
+                        throw new Error(`HTTP错误! 状态码: ${response.status}`);
                     }
                     return response.text();
                 })
@@ -154,9 +129,14 @@
                     favoriteButton.style.display = 'flex';
                 })
                 .catch(error => {
-                    console.error('Error loading page:', error);
-                    htmlFiles.splice(randomIndex, 1);
-                    loadRandomPage();
+                    console.error('加载错误:', error);
+                    contentDiv.innerHTML = `<p>加载失败: ${error.message}</p>`;
+                    loadingDiv.style.display = 'none';
+                    
+                    const index = htmlFiles.indexOf(selectedFile);
+                    if (index > -1) htmlFiles.splice(index, 1);
+                    
+                    if (htmlFiles.length > 0) loadRandomPage();
                 });
         }
         
@@ -164,7 +144,13 @@
             const modal = document.getElementById('favoriteModal');
             const modalBackground = document.getElementById('modalBackground');
             const resourceLink = document.getElementById('resourceLink');
-            resourceLink.value = window.location.href.replace('suiji.html', currentLoadedPage);
+            
+            // 只拼接一次基础URL
+            const fullUrl = currentLoadedPage.startsWith('http') ? 
+                currentLoadedPage : 
+                baseUrl + currentLoadedPage;
+                
+            resourceLink.value = fullUrl;
             modal.style.display = 'block';
             modalBackground.style.display = 'block';
         }
@@ -185,10 +171,12 @@
     </script>
 </head>
 <body>
-    <div id="loading">正在为你寻找色图...请稍后...</div>
+    <div id="loading">正在为您寻找资源...</div>
     <div id="content"></div>
     <button id="viewAllButton">点我查看所有</button>
-    <button id="favoriteButton">❤️</button>
+    <button id="favoriteButton">
+        <img src="https://xiaobeirepo.github.io/repo2/Five-pointed_star.svg" alt="收藏">
+    </button>
 
     <div id="modalBackground" onclick="hideFavoriteModal()"></div>
 
