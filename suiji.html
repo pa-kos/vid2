@@ -89,12 +89,11 @@
     <script>
     // 定义 HTML 文件链接数组
     let htmlFiles = [
-        'https://pa-kos.github.io/vid2/ZJCSncFFnm.html',
-            'https://pa-kos.github.io/vid2/KDIPKeFdEF.html',
-            'https://pa-kos.github.io/vid2/mMOPuyHPvC.html',
-            'https://pa-kos.github.io/vid2/ryjhFpmnyC.html',
-            'https://pa-kos.github.io/vid2/rrApZDrChE.html',
-            'https://pa-kos.github.io/vid2/inLlzOpmgP.html'
+        'page1.html',
+        'page2.html',
+        'page3.html',
+        'page4.html',
+        'page5.html'
     ];
     
     let currentLoadedPage = '';
@@ -107,11 +106,8 @@
         const contentDiv = document.getElementById('content');
         const favoriteBtn = document.getElementById('favoriteButton');
         
-        // 保存原始链接HTML（但不立即插入）
-        const originalLink = '<div class="original-link-container"><a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a></div>';
-
         if (htmlFiles.length === 0) {
-            contentDiv.innerHTML = '<h1>没有可用的资源了！</h1>' + originalLink;
+            contentDiv.innerHTML = '<h1>没有可用的资源了！</h1><a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>';
             isLoading = false;
             return;
         }
@@ -125,28 +121,17 @@
                 return response.text();
             })
             .then(html => {
-                // 创建临时容器处理内容
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
+                // 保留原始链接
+                const originalLink = '<a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>';
+                contentDiv.innerHTML = html + originalLink;
                 
-                // 移除可能干扰的定位样式
-                tempDiv.querySelectorAll('*').forEach(el => {
+                // 重置所有元素的定位样式
+                contentDiv.querySelectorAll('*').forEach(el => {
                     el.style.position = '';
                     el.style.float = '';
                     el.style.bottom = '';
                     el.style.right = '';
                 });
-                
-                // 将处理后的内容插入到正式容器
-                contentDiv.innerHTML = tempDiv.innerHTML + originalLink;
-                
-                // 确保链接容器样式正常
-                const linkContainer = contentDiv.querySelector('.original-link-container');
-                if (linkContainer) {
-                    linkContainer.style.position = 'static';
-                    linkContainer.style.textAlign = 'center';
-                    linkContainer.style.margin = '20px 0';
-                }
                 
                 favoriteBtn.style.display = 'flex';
                 isLoading = false;
@@ -158,8 +143,6 @@
                 loadRandomPage();
             });
     }
-
-    // ...其他函数保持不变...
         
         function showFavoriteModal() {
             const modal = document.getElementById('favoriteModal');
@@ -187,15 +170,8 @@
             hideFavoriteModal();
         }
         
-            window.onload = function() {
-        // 初始显示加载状态
-        document.getElementById('content').innerHTML = `
-            <h1>正在为你寻找资源...请稍后...</h1>
-            <br />
-            <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>
-        `;
-        
-        // 延迟加载确保显示初始状态
+           window.onload = function() {
+        // 直接开始加载，不再设置初始内容
         setTimeout(loadRandomPage, 300);
     };
 </script>
