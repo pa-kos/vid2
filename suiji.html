@@ -89,7 +89,7 @@
     <script>
     // 定义 HTML 文件链接数组
     let htmlFiles = [
-        'https://pa-kos.github.io/vid2/ZJCSncFFnm.html',
+       'https://pa-kos.github.io/vid2/ZJCSncFFnm.html',
             'https://pa-kos.github.io/vid2/KDIPKeFdEF.html',
             'https://pa-kos.github.io/vid2/mMOPuyHPvC.html',
             'https://pa-kos.github.io/vid2/ryjhFpmnyC.html',
@@ -100,48 +100,18 @@
     let currentLoadedPage = '';
     let isLoading = false;
 
-    // 增强版图片处理器
-    function processDynamicImages(html) {
+    // 专用处理器：完全保留原动态加载逻辑
+    function processDynamicContent(html) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
         
-        // 处理所有图片容器
-        tempDiv.querySelectorAll('.image-container').forEach(container => {
-            const img = container.querySelector('img');
-            const scripts = container.getElementsByTagName('script');
-            
-            if (img && scripts.length > 0) {
-                // 提取动态URL并立即应用（不再等待脚本执行）
-                const scriptContent = scripts[0].textContent;
-                const urlMatch = scriptContent.match(/const\s+\w+\s*=\s*"([^"]+)"/);
-                
-                if (urlMatch && urlMatch[1]) {
-                    // 保留原alt文本作为加载提示
-                    const loadingText = img.alt || '图片加载中...';
-                    img.alt = loadingText;
-                    
-                    // 创建加载指示器
-                    const loader = document.createElement('div');
-                    loader.textContent = loadingText;
-                    loader.style.textAlign = 'center';
-                    loader.style.padding = '10px';
-                    img.parentNode.insertBefore(loader, img);
-                    
-                    // 开始加载图片（带缓存清除）
-                    const imageUrl = urlMatch[1] + '?t=' + Date.now();
-                    const tempImg = new Image();
-                    
-                    tempImg.onload = function() {
-                        img.src = this.src;
-                        loader.remove();
-                    };
-                    
-                    tempImg.onerror = function() {
-                        loader.textContent = '图片加载失败: ' + loadingText;
-                    };
-                    
-                    tempImg.src = imageUrl;
-                }
+        // 执行所有脚本（保持原有加载逻辑）
+        tempDiv.querySelectorAll('script').forEach(script => {
+            if (script.textContent.includes('loadImage')) {
+                // 创建新脚本元素执行原代码
+                const newScript = document.createElement('script');
+                newScript.textContent = script.textContent;
+                script.parentNode.replaceChild(newScript, script);
             }
         });
         
@@ -156,7 +126,6 @@
         const favoriteBtn = document.getElementById('favoriteButton');
         
         if (htmlFiles.length === 0) {
-            // 仅更新文本内容
             const h1 = contentDiv.querySelector('h1');
             if (h1) h1.textContent = '没有可用的资源了！';
             isLoading = false;
@@ -166,32 +135,31 @@
         const selectedFile = htmlFiles[Math.floor(Math.random() * htmlFiles.length)];
         currentLoadedPage = selectedFile;
         
-        fetch(selectedFile + '?t=' + Date.now()) // 禁用缓存
+        fetch(selectedFile + '?t=' + Date.now())
             .then(response => {
                 if (!response.ok) throw new Error('HTTP ' + response.status);
                 return response.text();
             })
             .then(html => {
-                // 处理图片加载
-                const processedHtml = processDynamicImages(html);
+                // 完全保留原HTML结构（包括脚本）
+                contentDiv.innerHTML = html;
                 
-                // 创建临时容器
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = processedHtml;
-                
-                // 清空内容区域（保留初始链接）
-                while (contentDiv.firstChild) {
-                    if (contentDiv.firstChild.id !== 'xunlei') {
-                        contentDiv.removeChild(contentDiv.firstChild);
-                    } else {
-                        break;
-                    }
+                // 确保初始链接保留
+                if (!contentDiv.querySelector('#xunlei')) {
+                    const originalLink = document.createElement('a');
+                    originalLink.id = 'xunlei';
+                    originalLink.href = 'https://qm.qq.com/q/HVqNbzS1aM';
+                    originalLink.textContent = '点我查看所有';
+                    contentDiv.appendChild(originalLink);
                 }
                 
-                // 插入新内容（保留原始链接位置）
-                Array.from(tempDiv.children).forEach(child => {
-                    contentDiv.insertBefore(child, document.getElementById('xunlei'));
-                });
+                // 执行动态图片加载
+                const scripts = contentDiv.getElementsByTagName('script');
+                for (let script of scripts) {
+                    if (script.textContent.includes('loadImage')) {
+                        new Function(script.textContent)();
+                    }
+                }
                 
                 favoriteBtn.style.display = 'flex';
                 isLoading = false;
@@ -203,7 +171,6 @@
                 loadRandomPage();
             });
     }
-
         
         function showFavoriteModal() {
             const modal = document.getElementById('favoriteModal');
