@@ -99,17 +99,31 @@
     
     let currentLoadedPage = '';
     
-    // 动态修正图片路径（专为 pa-kos/vid2 仓库）
-    function fixImagePaths(htmlContent) {
-        const repoBase = 'https://raw.githubusercontent.com/pa-kos/vid2/main/';
-        return htmlContent.replace(/src=["'](.+?)["']/g, (match, path) => {
-            // 跳过已经是完整URL的路径
-            if (path.startsWith('http') || path.startsWith('data:')) {
-                return match;
+    // 专用图片加载器（兼容Base64和动态URL）
+    function processDynamicImages(htmlContent) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+        
+        // 处理所有带动态加载的图片容器
+        const imageContainers = doc.querySelectorAll('.image-container');
+        imageContainers.forEach(container => {
+            const img = container.querySelector('img');
+            if (img && img.src.startsWith('data:')) {
+                const script = container.querySelector('script');
+                if (script) {
+                    // 提取原脚本中的动态URL
+                    const urlMatch = script.textContent.match(/const\s+\w+\s*=\s*"([^"]+)"/);
+                    if (urlMatch && urlMatch[1]) {
+                        // 替换为直接加载动态URL（保留原加载逻辑）
+                        img.src = urlMatch[1] + '?' + new Date().getTime();
+                        img.removeAttribute('srcset');
+                    }
+                }
             }
-            // 为相对路径添加仓库基础URL
-            return `src="${repoBase}${path.replace(/^\//, '')}"`;
         });
+        
+        // 返回处理后的HTML
+        return doc.body.innerHTML;
     }
     
     function loadRandomPage() {
@@ -117,40 +131,34 @@
         const favoriteBtn = document.getElementById('favoriteButton');
         
         if (htmlFiles.length === 0) {
-            contentDiv.innerHTML = '<h1>没有可用的资源了！</h1><p>所有资源都已尝试加载，但没有可用的内容。</p>';
+            contentDiv.innerHTML = '<h1>没有可用的资源了！</h1>';
             return;
         }
         
-        const randomIndex = Math.floor(Math.random() * htmlFiles.length);
-        const selectedFile = htmlFiles[randomIndex];
+        const selectedFile = htmlFiles[Math.floor(Math.random() * htmlFiles.length)];
         currentLoadedPage = selectedFile;
         
         fetch(selectedFile)
-            .then(response => {
-                if (response.ok) {
-                    return response.text();
-                } else if (response.status === 404) {
-                    htmlFiles.splice(randomIndex, 1);
-                    loadRandomPage();
-                    return Promise.reject('404 Not Found');
-                } else {
-                    return Promise.reject('Other error');
-                }
-            })
+            .then(response => response.text())
             .then(html => {
-                // 修正图片路径后再显示内容
-                const fixedHtml = fixImagePaths(html);
-                contentDiv.innerHTML = fixedHtml;
+                // 处理动态图片加载
+                const processedHtml = processDynamicImages(html);
+                contentDiv.innerHTML = processedHtml;
                 favoriteBtn.style.display = 'flex';
+                
+                // 手动执行原脚本中的加载逻辑
+                contentDiv.querySelectorAll('script').forEach(script => {
+                    if (script.textContent.includes('loadImage')) {
+                        new Function(script.textContent)();
+                    }
+                });
             })
             .catch(error => {
-                if (error !== '404 Not Found') {
-                    htmlFiles.splice(randomIndex, 1);
-                    loadRandomPage();
-                }
+                console.error('加载失败:', error);
+                htmlFiles = htmlFiles.filter(f => f !== selectedFile);
+                loadRandomPage();
             });
     }
-
         
         function showFavoriteModal() {
             const modal = document.getElementById('favoriteModal');
