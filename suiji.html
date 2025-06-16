@@ -89,39 +89,29 @@
     <script>
     // 定义 HTML 文件链接数组
     let htmlFiles = [
-        'https://pa-kos.github.io/vid2/ZJCSncFFnm.html',
-            'https://pa-kos.github.io/vid2/KDIPKeFdEF.html',
-            'https://pa-kos.github.io/vid2/mMOPuyHPvC.html',
-            'https://pa-kos.github.io/vid2/ryjhFpmnyC.html',
-            'https://pa-kos.github.io/vid2/rrApZDrChE.html',
-            'https://pa-kos.github.io/vid2/inLlzOpmgP.html'
+        'page1.html',
+        'page2.html',
+        'page3.html',
+        'page4.html',
+        'page5.html'
     ];
     
     let currentLoadedPage = '';
-    
-    // 新增：防止内容缩放的方法
-    function preventContentZooming(htmlContent) {
-        // 1. 移除可能存在的zoom/transform样式
-        htmlContent = htmlContent.replace(/style="[^"]*zoom:[^";]*;?/gi, 'style="')
-                               .replace(/style="[^"]*transform:[^";]*scale\([^)]*\)[^";]*;?/gi, 'style="');
-        
-        // 2. 强制添加响应式meta标签（如果不存在）
-        if (!/<meta[^>]+viewport/.test(htmlContent)) {
-            htmlContent = htmlContent.replace(
-                /<head[^>]*>/i, 
-                '$&<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
-            );
-        }
-        
-        return htmlContent;
-    }
-    
+    let isLoading = false; // 新增加载状态锁
+
     function loadRandomPage() {
+        if (isLoading) return;
+        isLoading = true;
+        
         const contentDiv = document.getElementById('content');
         const favoriteBtn = document.getElementById('favoriteButton');
         
+        // 清空内容前先备份原始链接
+        const originalLink = contentDiv.querySelector('#xunlei')?.outerHTML || '';
+
         if (htmlFiles.length === 0) {
-            contentDiv.innerHTML = '<h1>没有可用的资源了！</h1>';
+            contentDiv.innerHTML = '<h1>没有可用的资源了！</h1>' + originalLink;
+            isLoading = false;
             return;
         }
         
@@ -129,26 +119,33 @@
         currentLoadedPage = selectedFile;
         
         fetch(selectedFile)
-            .then(response => response.text())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.text();
+            })
             .then(html => {
-                // 先处理缩放问题
-                const processedHtml = preventContentZooming(html);
-                contentDiv.innerHTML = processedHtml;
-                
-                // 然后处理图片动态加载
-                const finalHtml = processDynamicImages(processedHtml);
-                contentDiv.innerHTML = finalHtml;
-                
-                // 强制重置内容区域缩放
-                contentDiv.style.zoom = "1";
-                contentDiv.style.transform = "scale(1)";
-                
+                // 成功加载后永久保留内容（不再被重置）
+                contentDiv.innerHTML = html + originalLink;
                 favoriteBtn.style.display = 'flex';
+                isLoading = false;
+                
+                // 动态处理可能存在的图片加载脚本
+                setTimeout(() => {
+                    const scripts = contentDiv.getElementsByTagName('script');
+                    for (let script of scripts) {
+                        if (script.textContent.includes('loadImage')) {
+                            new Function(script.textContent)();
+                        }
+                    }
+                }, 100);
             })
             .catch(error => {
                 console.error('加载失败:', error);
                 htmlFiles = htmlFiles.filter(f => f !== selectedFile);
-                loadRandomPage();
+                isLoading = false;
+                loadRandomPage(); // 自动重试
             });
     }
 
@@ -179,15 +176,18 @@
             hideFavoriteModal();
         }
         
-        window.onload = function() {
-        // 确保基础页面不被缩放
-        document.querySelector('meta[name="viewport"]')?.setAttribute(
-            'content', 
-            'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
-        );
-        loadRandomPage();
+            window.onload = function() {
+        // 初始显示加载状态
+        document.getElementById('content').innerHTML = `
+            <h1>正在为你寻找资源...请稍后...</h1>
+            <br />
+            <a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>
+        `;
+        
+        // 延迟加载确保显示初始状态
+        setTimeout(loadRandomPage, 300);
     };
-    </script>
+</script>
 </head>
 <body>
     <div id="content">
