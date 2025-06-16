@@ -99,6 +99,19 @@
     
     let currentLoadedPage = '';
     
+    // 动态修正图片路径（专为 pa-kos/vid2 仓库）
+    function fixImagePaths(htmlContent) {
+        const repoBase = 'https://raw.githubusercontent.com/pa-kos/vid2/main/';
+        return htmlContent.replace(/src=["'](.+?)["']/g, (match, path) => {
+            // 跳过已经是完整URL的路径
+            if (path.startsWith('http') || path.startsWith('data:')) {
+                return match;
+            }
+            // 为相对路径添加仓库基础URL
+            return `src="${repoBase}${path.replace(/^\//, '')}"`;
+        });
+    }
+    
     function loadRandomPage() {
         const contentDiv = document.getElementById('content');
         const favoriteBtn = document.getElementById('favoriteButton');
@@ -125,8 +138,9 @@
                 }
             })
             .then(html => {
-                // 完全替换内容，不保留原始链接
-                contentDiv.innerHTML = html;
+                // 修正图片路径后再显示内容
+                const fixedHtml = fixImagePaths(html);
+                contentDiv.innerHTML = fixedHtml;
                 favoriteBtn.style.display = 'flex';
             })
             .catch(error => {
@@ -136,6 +150,7 @@
                 }
             });
     }
+
         
         function showFavoriteModal() {
             const modal = document.getElementById('favoriteModal');
