@@ -100,23 +100,48 @@
     let currentLoadedPage = '';
     let isLoading = false;
 
-    // 动态加载图片处理器（保持不变）
+    // 增强版图片处理器
     function processDynamicImages(html) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
         
+        // 处理所有图片容器
         tempDiv.querySelectorAll('.image-container').forEach(container => {
             const img = container.querySelector('img');
-            const scripts = container.querySelectorAll('script');
+            const scripts = container.getElementsByTagName('script');
             
             if (img && scripts.length > 0) {
-                scripts.forEach(script => {
-                    const urlMatch = script.textContent.match(/const\s+\w+\s*=\s*"([^"]+)"/);
-                    if (urlMatch && urlMatch[1]) {
-                        img.src = urlMatch[1] + '?t=' + Date.now();
-                        img.style.display = 'block';
-                    }
-                });
+                // 提取动态URL并立即应用（不再等待脚本执行）
+                const scriptContent = scripts[0].textContent;
+                const urlMatch = scriptContent.match(/const\s+\w+\s*=\s*"([^"]+)"/);
+                
+                if (urlMatch && urlMatch[1]) {
+                    // 保留原alt文本作为加载提示
+                    const loadingText = img.alt || '图片加载中...';
+                    img.alt = loadingText;
+                    
+                    // 创建加载指示器
+                    const loader = document.createElement('div');
+                    loader.textContent = loadingText;
+                    loader.style.textAlign = 'center';
+                    loader.style.padding = '10px';
+                    img.parentNode.insertBefore(loader, img);
+                    
+                    // 开始加载图片（带缓存清除）
+                    const imageUrl = urlMatch[1] + '?t=' + Date.now();
+                    const tempImg = new Image();
+                    
+                    tempImg.onload = function() {
+                        img.src = this.src;
+                        loader.remove();
+                    };
+                    
+                    tempImg.onerror = function() {
+                        loader.textContent = '图片加载失败: ' + loadingText;
+                    };
+                    
+                    tempImg.src = imageUrl;
+                }
             }
         });
         
@@ -131,7 +156,7 @@
         const favoriteBtn = document.getElementById('favoriteButton');
         
         if (htmlFiles.length === 0) {
-            // 错误状态只更新提示文本
+            // 仅更新文本内容
             const h1 = contentDiv.querySelector('h1');
             if (h1) h1.textContent = '没有可用的资源了！';
             isLoading = false;
@@ -141,25 +166,33 @@
         const selectedFile = htmlFiles[Math.floor(Math.random() * htmlFiles.length)];
         currentLoadedPage = selectedFile;
         
-        fetch(selectedFile)
+        fetch(selectedFile + '?t=' + Date.now()) // 禁用缓存
             .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
                 return response.text();
             })
             .then(html => {
-                // 仅替换内容区域的主要部分（保留初始链接）
-                const mainContent = document.createElement('div');
-                mainContent.innerHTML = processDynamicImages(html);
+                // 处理图片加载
+                const processedHtml = processDynamicImages(html);
                 
-                // 清空内容区域（但保留初始链接）
+                // 创建临时容器
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = processedHtml;
+                
+                // 清空内容区域（保留初始链接）
                 while (contentDiv.firstChild) {
-                    contentDiv.removeChild(contentDiv.firstChild);
+                    if (contentDiv.firstChild.id !== 'xunlei') {
+                        contentDiv.removeChild(contentDiv.firstChild);
+                    } else {
+                        break;
+                    }
                 }
                 
-                // 添加处理后的内容
-                contentDiv.appendChild(mainContent);
+                // 插入新内容（保留原始链接位置）
+                Array.from(tempDiv.children).forEach(child => {
+                    contentDiv.insertBefore(child, document.getElementById('xunlei'));
+                });
                 
-                // 不需要再添加链接
                 favoriteBtn.style.display = 'flex';
                 isLoading = false;
             })
@@ -170,6 +203,7 @@
                 loadRandomPage();
             });
     }
+
         
         function showFavoriteModal() {
             const modal = document.getElementById('favoriteModal');
