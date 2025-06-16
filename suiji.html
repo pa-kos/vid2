@@ -99,31 +99,21 @@
     
     let currentLoadedPage = '';
     
-    // 专用图片加载器（兼容Base64和动态URL）
-    function processDynamicImages(htmlContent) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlContent, 'text/html');
+    // 新增：防止内容缩放的方法
+    function preventContentZooming(htmlContent) {
+        // 1. 移除可能存在的zoom/transform样式
+        htmlContent = htmlContent.replace(/style="[^"]*zoom:[^";]*;?/gi, 'style="')
+                               .replace(/style="[^"]*transform:[^";]*scale\([^)]*\)[^";]*;?/gi, 'style="');
         
-        // 处理所有带动态加载的图片容器
-        const imageContainers = doc.querySelectorAll('.image-container');
-        imageContainers.forEach(container => {
-            const img = container.querySelector('img');
-            if (img && img.src.startsWith('data:')) {
-                const script = container.querySelector('script');
-                if (script) {
-                    // 提取原脚本中的动态URL
-                    const urlMatch = script.textContent.match(/const\s+\w+\s*=\s*"([^"]+)"/);
-                    if (urlMatch && urlMatch[1]) {
-                        // 替换为直接加载动态URL（保留原加载逻辑）
-                        img.src = urlMatch[1] + '?' + new Date().getTime();
-                        img.removeAttribute('srcset');
-                    }
-                }
-            }
-        });
+        // 2. 强制添加响应式meta标签（如果不存在）
+        if (!/<meta[^>]+viewport/.test(htmlContent)) {
+            htmlContent = htmlContent.replace(
+                /<head[^>]*>/i, 
+                '$&<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">'
+            );
+        }
         
-        // 返回处理后的HTML
-        return doc.body.innerHTML;
+        return htmlContent;
     }
     
     function loadRandomPage() {
@@ -141,17 +131,19 @@
         fetch(selectedFile)
             .then(response => response.text())
             .then(html => {
-                // 处理动态图片加载
-                const processedHtml = processDynamicImages(html);
+                // 先处理缩放问题
+                const processedHtml = preventContentZooming(html);
                 contentDiv.innerHTML = processedHtml;
-                favoriteBtn.style.display = 'flex';
                 
-                // 手动执行原脚本中的加载逻辑
-                contentDiv.querySelectorAll('script').forEach(script => {
-                    if (script.textContent.includes('loadImage')) {
-                        new Function(script.textContent)();
-                    }
-                });
+                // 然后处理图片动态加载
+                const finalHtml = processDynamicImages(processedHtml);
+                contentDiv.innerHTML = finalHtml;
+                
+                // 强制重置内容区域缩放
+                contentDiv.style.zoom = "1";
+                contentDiv.style.transform = "scale(1)";
+                
+                favoriteBtn.style.display = 'flex';
             })
             .catch(error => {
                 console.error('加载失败:', error);
@@ -159,6 +151,7 @@
                 loadRandomPage();
             });
     }
+
         
         function showFavoriteModal() {
             const modal = document.getElementById('favoriteModal');
