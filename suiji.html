@@ -98,7 +98,7 @@
     ];
     
     let currentLoadedPage = '';
-    let isLoading = false; // 新增加载状态锁
+    let isLoading = false;
 
     function loadRandomPage() {
         if (isLoading) return;
@@ -107,8 +107,8 @@
         const contentDiv = document.getElementById('content');
         const favoriteBtn = document.getElementById('favoriteButton');
         
-        // 清空内容前先备份原始链接
-        const originalLink = contentDiv.querySelector('#xunlei')?.outerHTML || '';
+        // 保存原始链接HTML（但不立即插入）
+        const originalLink = '<div class="original-link-container"><a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a></div>';
 
         if (htmlFiles.length === 0) {
             contentDiv.innerHTML = '<h1>没有可用的资源了！</h1>' + originalLink;
@@ -121,35 +121,45 @@
         
         fetch(selectedFile)
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.text();
             })
             .then(html => {
-                // 成功加载后永久保留内容（不再被重置）
-                contentDiv.innerHTML = html + originalLink;
+                // 创建临时容器处理内容
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                
+                // 移除可能干扰的定位样式
+                tempDiv.querySelectorAll('*').forEach(el => {
+                    el.style.position = '';
+                    el.style.float = '';
+                    el.style.bottom = '';
+                    el.style.right = '';
+                });
+                
+                // 将处理后的内容插入到正式容器
+                contentDiv.innerHTML = tempDiv.innerHTML + originalLink;
+                
+                // 确保链接容器样式正常
+                const linkContainer = contentDiv.querySelector('.original-link-container');
+                if (linkContainer) {
+                    linkContainer.style.position = 'static';
+                    linkContainer.style.textAlign = 'center';
+                    linkContainer.style.margin = '20px 0';
+                }
+                
                 favoriteBtn.style.display = 'flex';
                 isLoading = false;
-                
-                // 动态处理可能存在的图片加载脚本
-                setTimeout(() => {
-                    const scripts = contentDiv.getElementsByTagName('script');
-                    for (let script of scripts) {
-                        if (script.textContent.includes('loadImage')) {
-                            new Function(script.textContent)();
-                        }
-                    }
-                }, 100);
             })
             .catch(error => {
                 console.error('加载失败:', error);
                 htmlFiles = htmlFiles.filter(f => f !== selectedFile);
                 isLoading = false;
-                loadRandomPage(); // 自动重试
+                loadRandomPage();
             });
     }
 
+    // ...其他函数保持不变...
         
         function showFavoriteModal() {
             const modal = document.getElementById('favoriteModal');
