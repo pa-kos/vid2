@@ -100,22 +100,19 @@
     let currentLoadedPage = '';
     let isLoading = false;
 
-    // 动态加载图片处理器
+    // 动态加载图片处理器（保持不变）
     function processDynamicImages(html) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
         
-        // 处理所有图片容器
         tempDiv.querySelectorAll('.image-container').forEach(container => {
             const img = container.querySelector('img');
             const scripts = container.querySelectorAll('script');
             
             if (img && scripts.length > 0) {
-                // 提取动态URL
                 scripts.forEach(script => {
                     const urlMatch = script.textContent.match(/const\s+\w+\s*=\s*"([^"]+)"/);
                     if (urlMatch && urlMatch[1]) {
-                        // 直接替换为动态URL（保留时间戳防缓存）
                         img.src = urlMatch[1] + '?t=' + Date.now();
                         img.style.display = 'block';
                     }
@@ -134,8 +131,9 @@
         const favoriteBtn = document.getElementById('favoriteButton');
         
         if (htmlFiles.length === 0) {
-            contentDiv.innerHTML = '<h1>没有可用的资源了！</h1>' + 
-                                 '<a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>';
+            // 错误状态只更新提示文本
+            const h1 = contentDiv.querySelector('h1');
+            if (h1) h1.textContent = '没有可用的资源了！';
             isLoading = false;
             return;
         }
@@ -149,25 +147,19 @@
                 return response.text();
             })
             .then(html => {
-                // 处理动态图片加载
-                const processedHtml = processDynamicImages(html);
+                // 仅替换内容区域的主要部分（保留初始链接）
+                const mainContent = document.createElement('div');
+                mainContent.innerHTML = processDynamicImages(html);
                 
-                // 保留原始链接并插入处理后的内容
-                contentDiv.innerHTML = processedHtml + 
-                                      '<div style="text-align:center;margin:20px 0">' +
-                                      '<a id="xunlei" href="https://qm.qq.com/q/HVqNbzS1aM">点我查看所有</a>' +
-                                      '</div>';
+                // 清空内容区域（但保留初始链接）
+                while (contentDiv.firstChild) {
+                    contentDiv.removeChild(contentDiv.firstChild);
+                }
                 
-                // 执行可能存在的其他脚本
-                setTimeout(() => {
-                    const scripts = contentDiv.getElementsByTagName('script');
-                    for (let script of scripts) {
-                        if (script.textContent.includes('loadImage')) {
-                            new Function(script.textContent)();
-                        }
-                    }
-                }, 100);
+                // 添加处理后的内容
+                contentDiv.appendChild(mainContent);
                 
+                // 不需要再添加链接
                 favoriteBtn.style.display = 'flex';
                 isLoading = false;
             })
@@ -206,7 +198,7 @@
         }
         
            window.onload = function() {
-        // 直接开始加载，不再设置初始内容
+        // 直接开始加载
         setTimeout(loadRandomPage, 300);
     };
 </script>
